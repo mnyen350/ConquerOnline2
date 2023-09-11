@@ -9,10 +9,10 @@ namespace ConquerServer.Client
 {
     public class SlashCommandAttribute : Attribute, IDispatcherAttribute<string>
     {
-        public string Key { get; private set; }
-        public SlashCommandAttribute(string command)
+        public string[] Keys { get; private set; }
+        public SlashCommandAttribute(params string[] commands)
         {
-            Key = command;
+            Keys = commands;
         }
     }
 }

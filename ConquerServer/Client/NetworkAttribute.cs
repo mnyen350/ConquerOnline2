@@ -9,10 +9,10 @@ namespace ConquerServer.Client
 {
     public class NetworkAttribute : Attribute, IDispatcherAttribute<PacketType>
     {
-        public PacketType Key { get; private set; }
-        public NetworkAttribute(PacketType type)
+        public PacketType[] Keys { get; private set; }
+        public NetworkAttribute(params PacketType[] types)
         {
-            Key = type;
+            Keys = types;
         }
     }
 }

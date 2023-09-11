@@ -9,7 +9,7 @@ namespace ConquerServer.Client
 {
     public partial class GameClient
     {
-        [SlashCommand("teleport")]
+        [SlashCommand("teleport", "tp")]
         private void SlashTeleport(string[] messageContents)
         {
             // teleport as requested (/teleport 1002 400 400)

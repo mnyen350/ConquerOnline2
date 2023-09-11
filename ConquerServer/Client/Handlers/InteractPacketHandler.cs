@@ -1,5 +1,7 @@
 ﻿using ConquerServer.Database.Models;
+using ConquerServer.Combat;
 using ConquerServer.Network;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -49,7 +51,7 @@ namespace ConquerServer.Client
                         //typeid -> magictypemodel
                         //source.magic[typeid].attri
                         MagicTypeModel spell = this.Magics[data0].Attributes;
-                        Combat test = new Combat(this, target, spell);
+                        Battle test = new Battle(this, target, x, y, spell);
                         test.Start();
                         break;
                     }

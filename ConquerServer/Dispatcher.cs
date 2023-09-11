@@ -9,7 +9,7 @@ namespace ConquerServer
 {
     public interface IDispatcherAttribute<T>
     {
-        public T Key { get; }
+        public T[] Keys { get; }
     }
 
     public class Dispatcher<TKey, TAttribute, TDelegate>
@@ -34,8 +34,12 @@ namespace ConquerServer
                 TAttribute? attr = methodInfo.GetCustomAttribute<TAttribute>();
                 if (attr != null)
                 {
+                    if (attr.Keys.Length == 0)
+                        throw new InvalidOperationException("Dispatcher attribute has no keys present.");
+
                     TDelegate action = (TDelegate)Delegate.CreateDelegate(typeof(TDelegate), null, methodInfo);
-                    m_Actions[attr.Key] = action;
+                    foreach (var key in attr.Keys)
+                        m_Actions[key] = action;
                 }
             }
         }

@@ -68,7 +68,7 @@ namespace ConquerServer.Network
 
         public MagicEffectPacket Begin(int id, int x, int y, int type, int lv, int effect)
         {
-            return Begin(id, (x << 16) | y, type, lv, effect);
+            return Begin(id, (y << 16) | x, type, lv, effect);
         }
 
         public MagicEffectPacket Add(int id, params int[] data)
