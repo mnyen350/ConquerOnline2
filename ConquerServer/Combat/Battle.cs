@@ -19,7 +19,7 @@ namespace ConquerServer.Combat
         }
         //source, target, skill/magic/lackof
         public GameClient Source { get; set; }
-        public List<GameClient> Targets { get; set; }
+        public HashSet<GameClient> Targets { get; set; }
 
         public MagicTypeModel? Spell { get; set; }
         public int CastX { get; private set; } //coordinate clicked to cast skill
@@ -28,7 +28,7 @@ namespace ConquerServer.Combat
         public Battle(GameClient source, GameClient target, int castX=0, int castY=0, MagicTypeModel? spell = null)
         {
             Source = source;
-            Targets = new List<GameClient>();
+            Targets = new HashSet<GameClient>();
             if (target != null)
                 Targets.Add(target);
             Spell = spell;
@@ -60,8 +60,9 @@ namespace ConquerServer.Combat
 
             if (CastX == 0 && CastY == 0 && Targets.Count > 0)
             {
-                CastX = Targets[0].X;
-                CastY = Targets[0].Y;
+                var firstTarget = Targets.First();
+                CastX = firstTarget.X;
+                CastY = firstTarget.Y;
             }
 
             var findTargets = c_Magic[Spell.Sort];
@@ -79,15 +80,47 @@ namespace ConquerServer.Combat
             ProcessTargets();
         }
 
+        private bool IsPotentialTarget(GameClient target)
+        {
+            if (target.Id == Source.Id) return false; // cannot hit yourself
+
+            if (target.Health <= 0) return false; // cannot hit dead
+
+            if (Source.PKMode == PKMode.Peace) 
+            {
+                return false; //hitting no one
+            }
+            else if(Source.PKMode == PKMode.Capture)
+            {
+                //TO-DO: implement nameflashing(datetime??), black name(PK POINT SYSTEM)
+                return false;
+            }
+            else if(Source.PKMode == PKMode.Revenge)
+            {
+                //TO-DO: implement revenge list, auto add ppl who just killed you.. only hit those ppl
+                return false;
+            }
+            else if(Source.PKMode == PKMode.Team)
+            {
+                //TO-DO: implrement Team like literally the team of 4 u are in RN
+                return false;
+            }
+            else if(Source.PKMode == PKMode.Guild)
+            {
+                //TO-DO: everyone EXCEPT, guild, team, guild's allies
+                return false;
+            }
+            /*else if(Source.PKMode == PKMode.Kill)
+            {
+                return true;
+            }*/
+
+            return true; // is potential target
+        }
+
         private void FilterTargets()
         {
-            // TO-DO: ...
-
-            //dont attack yourself... at all
-            if(Targets.Contains(Source))
-            {
-                Targets.Remove(Source);
-            }
+            Targets.RemoveWhere(t => !IsPotentialTarget(t));
         }
 
         private void ProcessTargets()

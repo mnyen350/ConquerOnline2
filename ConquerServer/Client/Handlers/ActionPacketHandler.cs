@@ -117,6 +117,18 @@ namespace ConquerServer.Client
 
                 this.Teleport(portal.ToMapId, portal.ToX, portal.ToY);
             }
+            else if(mode == ActionType.ChangePkMode)
+            {
+                Console.WriteLine(p.Dump("Unknown Action - " + mode));
+                
+                //data1 
+                PKMode pk = (PKMode)data1;
+                if (pk.IsDefined())
+                {
+                    this.PKMode = pk;
+                    this.Send(p);
+                }
+            }
             else
             {
                 //Console.WriteLine(p.Dump("Unknown Action - " + mode));

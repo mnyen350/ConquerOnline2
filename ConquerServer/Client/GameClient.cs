@@ -86,6 +86,9 @@ namespace ConquerServer.Client
             }
 
         }
+        public PKMode PKMode { get; private set; }
+
+#warning, need a hostility/name flashing/name red whatever PKPOINTS 
 
         public GameClient(ClientSocket socket)
         {

@@ -9,6 +9,19 @@ namespace ConquerServer
 {
     public static class Utility
     {
+
+        public static bool IsDefined<T>(this T enumValue)
+            where T : Enum
+        {
+            return Enum.IsDefined(typeof(T), enumValue);
+        }
+
+        public static void AddRange<T>(this HashSet<T> hashSet, IEnumerable<T> range)
+        {
+            foreach (var item in range)
+                hashSet.Add(item);
+        }
+
         public static bool Remove<TKey, TValue>(this ConcurrentDictionary<TKey, TValue> dictionary, TKey key)
         {
             TValue? dummy;
