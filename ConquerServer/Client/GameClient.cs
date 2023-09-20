@@ -10,6 +10,7 @@ using ConquerServer.Database.Models;
 using System.Reflection.Metadata.Ecma335;
 using System.Security.Principal;
 using static System.Collections.Specialized.BitVector32;
+using System.Runtime.CompilerServices;
 
 namespace ConquerServer.Client
 {
@@ -23,6 +24,8 @@ namespace ConquerServer.Client
             g_Slash = new SlashCommandDispatcher();
         }
 
+
+        private Dictionary<SynchronizeType, long> _sync;
 
         public ClientSocket Socket { get; private set; }
         public Db Database { get; private set; }
@@ -103,6 +106,7 @@ namespace ConquerServer.Client
             Inventory = new Inventory(this);
             Equipment = new Equipment(this);
             Magics = new Dictionary<int, Magic>();
+            _sync = new Dictionary<SynchronizeType, long>();
         }
 
         public bool DispatchNetwork(Packet msg)
@@ -359,7 +363,52 @@ namespace ConquerServer.Client
             }
         }
 
+        private Dictionary<SynchronizeType, long> CreateSynchronize()
+        {
+            return new Dictionary<SynchronizeType, long>
+            {
+                { SynchronizeType.Health, Health },
+                { SynchronizeType.MaxLife, MaxHealth },
+                { SynchronizeType.Mana, Mana },
+                { SynchronizeType.MaxMana, MaxMana },
+                { SynchronizeType.Stamina, 100 }
+            };
+        }
+
         #region SEND methods
+        public void SendSynchronize()
+        {
+            var newSync = CreateSynchronize();
+            var diff = new Dictionary<SynchronizeType, long>();
+
+            // find the differences between _sync and newSync
+            foreach (var kvp in newSync)
+            {
+                long oldValue;
+                if (!_sync.TryGetValue(kvp.Key, out oldValue) || oldValue != kvp.Value)
+                    diff[kvp.Key] = kvp.Value;
+            }
+
+            // make the packet and send it
+            if (diff.Count > 0)
+            {
+                using (var p = new SynchronizePacket()
+                                      .Begin(this.Id))
+                {
+                    foreach (var kvp in diff)
+                        p.Synchronize(kvp.Key, kvp.Value);
+
+                    p.End();
+
+                    this.Send(p);
+                }
+
+                // update old sync
+                _sync = newSync;
+            }
+        }
+
+
         public void SendChat(ChatMode mode, string words)
         {
             using (var msg = new ChatPacket(mode, words))
@@ -572,32 +621,65 @@ namespace ConquerServer.Client
             msg.WriteInt32(0);
             msg.WriteInt32(0);
             msg.WriteInt16(0); // appearance type
-            //if (e.Lookface.Mesh <= 4)
+
+            if (e.Id >= 1000000) //
+            {
+                msg.WriteInt32(e.Equipment[ItemPosition.Set1Helmet]?.TypeId ?? 0);
+                msg.WriteInt32(e.Equipment[ItemPosition.Set1Garment]?.TypeId ?? 0);
+                msg.WriteInt32(e.Equipment[ItemPosition.Set1Armor]?.TypeId ?? 0);
+
+                msg.WriteInt32(e.Equipment[ItemPosition.Set1Weapon1]?.TypeId ?? 0);// e.WeaponLeftTypeId);
+                msg.WriteInt32(e.Equipment[ItemPosition.Set1Weapon2]?.TypeId ?? 0); // e.WeaponRightTypeId);
+                msg.WriteInt32(e.Equipment[ItemPosition.W1Accessory]?.TypeId ?? 0); // e.WeaponLeftCoatTypeId);
+                msg.WriteInt32(e.Equipment[ItemPosition.W2Accessory]?.TypeId ?? 0); // e.WeaponRightCoatTypeId);
+
+
+                msg.WriteInt32(e.Equipment[ItemPosition.Steed]?.TypeId ?? 0); //MountTypeId
+                msg.WriteInt32(e.Equipment[ItemPosition.SteedAccessory]?.TypeId ?? 0); //MountDecoratorTypeId
+            }
+            else //monsters
+            {
+                msg.WriteInt32(0);
+                msg.WriteInt32(0);
+                msg.WriteInt32(0);
+
+                msg.WriteInt32(0);
+                msg.WriteInt32(0);
+                msg.WriteInt32(0);
+                msg.WriteInt32(0);
+
+                msg.WriteInt32(0);
+                msg.WriteInt32(0);
+            }
+
+            ///*if (e.Lookface.Mesh <= 4)
             //{
             //    msg.WriteInt32(e.HelmetTypeId);
             //    msg.WriteInt32(e.OvercoatTypeId);
             //    msg.WriteInt32(e.ArmorTypeId);
             //}
-            //else
-            {
-                msg.WriteInt32(0);
-                msg.WriteInt32(0);
-                msg.WriteInt32(0);
-            }
-            msg.WriteInt32(0);// e.WeaponLeftTypeId);
-            msg.WriteInt32(0); // e.WeaponRightTypeId);
-            msg.WriteInt32(0); // e.WeaponLeftCoatTypeId);
-            msg.WriteInt32(0); // e.WeaponRightCoatTypeId);
-            //if (e.Lookface.Mesh <= 4)
+            //else*/
+            //{
+            //    msg.WriteInt32(0);
+            //    msg.WriteInt32(0);
+            //    msg.WriteInt32(0);
+            //}
+            //msg.WriteInt32(0);// e.WeaponLeftTypeId);
+            //msg.WriteInt32(0); // e.WeaponRightTypeId);
+            //msg.WriteInt32(0); // e.WeaponLeftCoatTypeId);
+            //msg.WriteInt32(0); // e.WeaponRightCoatTypeId);
+            ///*if (e.Lookface.Mesh <= 4)
             //{
             //    msg.WriteInt32(e.MountTypeId);
             //    msg.WriteInt32(e.MountDecoratorTypeId);
             //}
-            //else
-            {
-                msg.WriteInt32(0);
-                msg.WriteInt32(0);
-            }
+            //else*/
+            //{
+            //    msg.WriteInt32(0);
+            //    msg.WriteInt32(0);
+            //}
+
+
             msg.WriteInt16(0); // unknown
             msg.WriteInt16(0); // unknown
             msg.WriteInt16(0); // speed percent?
@@ -628,9 +710,21 @@ namespace ConquerServer.Client
             msg.WriteInt32(0); // team leader id
             msg.WriteInt32(0); // flowers
             msg.WriteInt32(0); // nobility
-            msg.WriteInt16((short)0); // e.ArmorColor); // armor color
-            msg.WriteInt16((short)0); // e.ShieldColor); // shield color
-            msg.WriteInt16((short)0); // e.HelmetColor); // helmet color
+
+            if (e.Id >= 1000000) //player
+            {
+                int h = e.Equipment[ItemPosition.Set1Helmet]?.Color ?? 0;
+                msg.WriteInt16((short)(e.Equipment[ItemPosition.Set1Armor]?.Color ?? 0)); // e.ArmorColor); // armor color
+                msg.WriteInt16((short)(e.Equipment[ItemPosition.Set1Weapon2]?.Color ?? 0)); // e.ShieldColor); // shield color
+                msg.WriteInt16((short)(h)); // e.HelmetColor); // helmet color
+            }
+            else //monsters
+            {
+                msg.WriteInt16((short)0); 
+                msg.WriteInt16((short)0); 
+                msg.WriteInt16((short)0); 
+            }
+
             msg.WriteInt32(e.QuizPoints); // quiz points
             msg.WriteInt16((short)0); // e.MountAdd); // mount add
             msg.WriteInt32(0); // mount exp
@@ -666,10 +760,11 @@ namespace ConquerServer.Client
             msg.WriteInt8(0); // gang hood level (jiang hu)
             msg.WriteInt8(0); // gang hood tag (jiang hu)
             msg.WriteInt8(0); // unknown (used)
-            msg.WriteInt16(0); // server name (5929)
-            msg.WriteInt8(0); // call pet type (5936)
-            msg.WriteInt16(0); // attack range (5936)
-            msg.WriteInt32(0); // owner id (5936)
+
+            //msg.WriteInt16(0); // server name (5929)
+            //msg.WriteInt8(0); // call pet type (5936)
+            //msg.WriteInt16(0); // attack range (5936)
+            //msg.WriteInt32(0); // owner id (5936)
 
             string mate = "";
             string clan = "";

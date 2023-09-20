@@ -141,6 +141,11 @@ namespace ConquerServer.Combat
 
                 Source.FieldOfView.Send(p.End(), true);
             }
+
+            // sync all entites involved
+            foreach (var entity in Targets)
+                entity.SendSynchronize();
+            Source.SendSynchronize();
         }
     }
 }

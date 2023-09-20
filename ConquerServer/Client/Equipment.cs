@@ -60,7 +60,6 @@ namespace ConquerServer.Client
                 return this.Sum(e => e.Attributes.MagicAttack);
             }
         }
-
         public int Life
         {
             get
@@ -79,7 +78,6 @@ namespace ConquerServer.Client
                 return enchantment + bonus;
             }
         }
-
         public int PhysicalDefense
         {
             get
@@ -127,7 +125,6 @@ namespace ConquerServer.Client
                 return range;
             }
         }
-
         public int AttackRate
         {
             get 
@@ -159,6 +156,20 @@ namespace ConquerServer.Client
             }
         }
 
+        public Item? GetItem(ItemPosition position)
+        {
+            Item? equip;
+            _equipped.TryGetValue(position, out equip);
+            return equip;
+        }
+
+        public Item? this[ItemPosition position] //give [] operator shortcut
+        {
+            get
+            {
+                return GetItem(position);
+            }
+        }
 
         public void Equip(Item item, ItemPosition position, bool update = true)
         {
@@ -172,7 +183,6 @@ namespace ConquerServer.Client
             if (update)
                 Update();
         }
-
         public void EquipFromInventory(int itemId)
         {
             Item? equipment = Owner.Inventory.FirstOrDefault(i => i.Id == itemId);
