@@ -135,6 +135,15 @@ namespace ConquerServer.Combat
                 {
                     int damage = 123;
                     bool miss = false;
+                    if (!miss)
+                    {
+                        entity.Health -= damage;
+                        if (entity.IsDead)
+                        {
+                            entity.Health = 0;
+                            entity.Lookface = entity.Lookface.ToGhost();
+                        }
+                    }
                     p.Add(entity.Id, damage, miss ? 0 : 1, 0);
                 }
 
@@ -144,8 +153,8 @@ namespace ConquerServer.Combat
 
             // sync all entites involved
             foreach (var entity in Targets)
-                entity.SendSynchronize();
-            Source.SendSynchronize();
+                entity.SendSynchronize(true);
+            Source.SendSynchronize(true);
         }
     }
 }

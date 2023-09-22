@@ -40,19 +40,26 @@ namespace ConquerServer.Database
             _magicTypes = new Dictionary<int, MagicTypeModel>();
         }
 
-        public static string Serialize<T>(T model)
+        private static JsonSerializerOptions GetJsonSerializerOptions()
         {
-            string serialized = JsonSerializer.Serialize(model, new JsonSerializerOptions()
+            var options = new JsonSerializerOptions()
             {
                 WriteIndented = true
-            });
+            };
+            options.Converters.Add(new Lookface());
+            return options;
+        }
+
+        public static string Serialize<T>(T model)
+        {
+            string serialized = JsonSerializer.Serialize(model, GetJsonSerializerOptions());
             return serialized;
         }
 
         public static T Deserialize<T>(string json)
         {
             //takes the string(storing all of the text within a file) and reconstructs the object
-            T? obj = JsonSerializer.Deserialize<T>(json);
+            T? obj = JsonSerializer.Deserialize<T>(json, GetJsonSerializerOptions());
             if (obj == null)
                 throw new ArgumentException("Argument provided when deserialized is a null object", nameof(json));
             return obj;
@@ -232,7 +239,7 @@ namespace ConquerServer.Database
             return regenChar;
         }
 
-        public void CreateCharacter(string username, string name, UInt16 lookface, Int16 job)
+        public void CreateCharacter(string username, string name, uint lookface, int job)
         {
             //throw error is char already exists
             if (HasCharacter(username))
@@ -249,7 +256,7 @@ namespace ConquerServer.Database
             CharacterModel model = new CharacterModel()
             {
                 Name = name,
-                Lookface = lookface,
+                Lookface = (Lookface)lookface,
                 Job = job,
                 Id = CharacterCounter++,
                 Level = 1,

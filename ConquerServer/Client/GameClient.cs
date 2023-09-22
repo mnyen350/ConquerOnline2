@@ -37,7 +37,7 @@ namespace ConquerServer.Client
         public string Username { get; private set; }
         public string Server { get; private set; }
         public int Id { get; set; }
-        public uint Lookface { get; set; }
+        public Lookface Lookface { get; set; }
         public short HairStyle { get; set; }
         public int Gold { get; set; }
         public int ConquerPoints { get; set; }
@@ -47,6 +47,7 @@ namespace ConquerServer.Client
         public int Vitality { get; set; }
         public int Spirit { get; set; }
         public int AttributePoints { get; set; }
+        public bool IsDead {  get { return (Health <= 0); } }
         public int Health { get; set; }
         public int MaxHealth { get; set; }
         public int Mana { get; set; }
@@ -371,12 +372,13 @@ namespace ConquerServer.Client
                 { SynchronizeType.MaxLife, MaxHealth },
                 { SynchronizeType.Mana, Mana },
                 { SynchronizeType.MaxMana, MaxMana },
-                { SynchronizeType.Stamina, 100 }
+                { SynchronizeType.Stamina, 100 },
+                { SynchronizeType.Lookface, (long)Lookface }
             };
         }
 
         #region SEND methods
-        public void SendSynchronize()
+        public void SendSynchronize(bool broadcast = false)
         {
             var newSync = CreateSynchronize();
             var diff = new Dictionary<SynchronizeType, long>();
@@ -400,7 +402,8 @@ namespace ConquerServer.Client
 
                     p.End();
 
-                    this.Send(p);
+                    if (broadcast) this.FieldOfView.Send(p, true);
+                    else this.Send(p);
                 }
 
                 // update old sync
@@ -458,7 +461,7 @@ namespace ConquerServer.Client
                 p.WriteUInt32(TimeStamp.GetTime()); // 5735
                 p.WriteInt32(Id);
                 p.WriteInt16(0); //AppearanceType
-                p.WriteUInt32(Lookface); //AppearanceId
+                p.WriteUInt32((uint)Lookface); //AppearanceId
                 p.WriteInt16(HairStyle); //HairStyle
                 p.WriteInt32(Gold);
                 p.WriteInt32(ConquerPoints);
@@ -606,7 +609,7 @@ namespace ConquerServer.Client
         {
             var msg = new Packet(PacketBufferSize.SizeOf512);
             msg.WriteUInt32(TimeStamp.GetTime()); // 5735
-            msg.WriteUInt32(e.Lookface);
+            msg.WriteUInt32((uint)e.Lookface);
             msg.WriteInt32(e.Id);
             msg.WriteInt32(0); // e.GuildId
             msg.WriteInt32(0); // e.GuildRank

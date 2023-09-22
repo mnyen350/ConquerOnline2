@@ -13,7 +13,7 @@ namespace ConquerServer.Database.Models
     {
         /*this is a roberry, put your hands up *gun pointed at gameclientCLASS*    */
         public int Id { get; set; }
-        public uint Lookface { get; set; }
+        public Lookface Lookface { get; set; }
         public short HairStyle { get; set; }
         public int Gold { get; set; }
         public int ConquerPoints { get; set; }
