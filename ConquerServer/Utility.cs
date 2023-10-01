@@ -9,18 +9,18 @@ namespace ConquerServer
 {
     public static class Utility
     {
-        public static void Delay(DateTime when, Action callback)
+        public static void Delay(TimeSpan when, Func<Task> task)
         {
-            int ms = (int)(when - DateTime.UtcNow).TotalMilliseconds;
-            //Console.WriteLine("Started delayed function expected to run in {0} ms", ms);
-
             Task.Run(async () =>
             {
-                await Task.Delay(ms);
-                callback();
-
-                //Console.WriteLine("Ran delayed function");
+                await Task.Delay(when);
+                await task();
             });
+        }
+
+        public static void Delay(TimeSpan when, Action callback)
+        {
+            Delay(when, () => new Task(callback));
         }
 
         public static bool IsDefined<T>(this T enumValue)

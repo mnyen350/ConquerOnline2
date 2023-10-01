@@ -132,14 +132,14 @@ namespace ConquerServer.Network
             return this;
         }
 
-        public SynchronizePacket Synchronize(SynchronizeType type, int[] vals)
+        public SynchronizePacket Synchronize(SynchronizeType type, int[] values)
         {
-            if (vals.Length != 5)
+            if (values.Length != 5)
                 throw new Exception("Error: Synchronize Packet - The sycnrhonize value size is incorrect (requires 5 ints)");
 
             IncrementSyncCount();
             this.WriteUInt32((uint)type);
-            this.WriteInt32Array(vals);
+            this.WriteInt32Array(values);
             return this;
         }
 

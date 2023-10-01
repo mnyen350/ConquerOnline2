@@ -35,9 +35,11 @@ namespace ConquerServer
         public void RemovePlayer(int? id = null)
         {
             id = id ?? Owner.Id;    
-
-            GameClient? dummy;
-            _gameClients.TryRemove((int)id, out dummy);
+            GameClient? player;
+            if (_gameClients.TryRemove((int)id, out player))
+            {
+                player.FieldOfView.Despawn();
+            }
         }
 
         public bool TryGetPlayer(int id, out GameClient? client)

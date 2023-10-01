@@ -149,15 +149,6 @@ namespace ConquerServer.Combat
                         if (entity.IsDead)
                         {
                             entity.Health = 0;
-
-                            Utility.Delay(DateTime.UtcNow.AddSeconds(3), () =>
-                            {
-                                if (entity.IsDead)
-                                {
-                                    entity.Lookface = entity.Lookface.ToGhost();
-                                    entity.SendSynchronize(true);
-                                }
-                            });
                         }
                     }
                     p.Add(entity.Id, damage, miss ? 0 : 1, 0);
@@ -170,13 +161,27 @@ namespace ConquerServer.Combat
             // sync all entites involved including Source
             foreach (var entity in Targets.Concat(new[] { Source }))
             {
-                entity.SendSynchronize(true);
-
-                Utility.Delay(DateTime.UtcNow.AddSeconds(0.1), () =>
+                if (entity.IsDead)
                 {
-                    if (entity.IsDead)
+                    // add the death status flag
+                    entity.Status += StatusFlag.Death;
+
+                    // issue the death broadcast, and change to ghost
+                    Utility.Delay(TimeSpan.FromSeconds(0.15), async () =>
+                    {
+                        if (!entity.IsDead) return; // revaldiate our assumption
                         BroadcastDeath(entity);
-                });
+
+                        await Task.Delay(TimeSpan.FromSeconds(1.5));
+
+                        if (!entity.IsDead) return; // revaldiate our assumption
+                        entity.Status += StatusFlag.Ghost;
+                        entity.Lookface = entity.Lookface.ToGhost();
+                        entity.SendSynchronize(true);
+                    });
+                }
+
+                entity.SendSynchronize(true);
             }
         }
     }

@@ -26,15 +26,19 @@ namespace ConquerServer.Client
             //
             // handle exiting someone's fov
             //
+            this.Despawn();
+            _screen.Clear();
+        }
+
+        public void Despawn()
+        {
             foreach (var p2 in _screen.Values)
             {
                 p2.FieldOfView._screen.Remove(Owner.Id);
                 using (var remove = GameClient.CreateDespawnPacket(Owner))
                     p2.Send(remove);
             }
-            _screen.Clear();
         }
-
 
         /*
          * left x

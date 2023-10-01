@@ -39,6 +39,7 @@ namespace ConquerServer.Client
         public string Username { get; private set; }
         public string Server { get; private set; }
         public int Id { get; set; }
+        public StatusFlag Status { get; set; }
         public Lookface Lookface { get; set; }
         public short HairStyle { get; set; }
         public int Gold { get; set; }
@@ -109,6 +110,7 @@ namespace ConquerServer.Client
             Inventory = new Inventory(this);
             Equipment = new Equipment(this);
             Magics = new Dictionary<int, Magic>();
+            Status = StatusFlag.None;
             _sync = new Dictionary<SynchronizeType, long>();
         }
 
@@ -153,7 +155,6 @@ namespace ConquerServer.Client
             }
         }
 
-         
         public void RecalculateStats()
         {
             // this method should recalculate stats based off of base values (i.e. items, base stats etc)
@@ -326,7 +327,7 @@ namespace ConquerServer.Client
             World.AddPlayer();
 
             this._loginSequenceCompleted = false;
-            Utility.Delay(DateTime.UtcNow.AddSeconds(10), () =>
+            Utility.Delay(TimeSpan.FromSeconds(10), () =>
             {
                 // client should complete login seq within 10s
                 if (!this._loginSequenceCompleted)
@@ -408,23 +409,24 @@ namespace ConquerServer.Client
             }
 
             // make the packet and send it
-            if (diff.Count > 0)
+            using (var p = new SynchronizePacket()
+                                  .Begin(this.Id))
             {
-                using (var p = new SynchronizePacket()
-                                      .Begin(this.Id))
-                {
-                    foreach (var kvp in diff)
-                        p.Synchronize(kvp.Key, kvp.Value);
+                // always sync the status flag
+                p.Synchronize(SynchronizeType.Flags, this.Status.Bits);
 
-                    p.End();
+                // sync any differences
+                foreach (var kvp in diff)
+                    p.Synchronize(kvp.Key, kvp.Value);
 
-                    if (broadcast) this.FieldOfView.Send(p, true);
-                    else this.Send(p);
-                }
+                p.End();
 
-                // update old sync
-                _sync = newSync;
+                if (broadcast) this.FieldOfView.Send(p, true);
+                else this.Send(p);
             }
+
+            // update old sync
+            _sync = newSync;
         }
 
 

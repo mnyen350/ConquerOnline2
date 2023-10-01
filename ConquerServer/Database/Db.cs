@@ -195,8 +195,10 @@ namespace ConquerServer.Database
                     magicType = MagicTypeModel.Parse(line);
                     _magicTypes.Add(magicType.CompositeKey, magicType);
                 }
-                catch
+                catch(Exception ex) 
                 {
+                    Console.WriteLine(line);
+                    Console.WriteLine(ex.ToString());
                     failed++;
                 }
             }

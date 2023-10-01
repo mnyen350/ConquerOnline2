@@ -17,6 +17,7 @@ namespace ConquerServer.Network.Sockets
 
         private Socket? m_Socket;
         private byte[] m_Buffer;
+        private bool m_Disconnected;
         public int HeaderSize { get; set; }
         public ICipher Cipher { get; private set; }
         public int ExpectedMessageSize { get; set; }
@@ -71,11 +72,15 @@ namespace ConquerServer.Network.Sockets
 
         public void Disconnect()
         {
+            if (m_Disconnected) 
+                return;
+
             try
             {
                 if (m_Socket == null)
                     return;
 
+                m_Disconnected = true;
                 m_Socket.Disconnect(false);
             }
             catch (SocketException)
@@ -121,9 +126,7 @@ namespace ConquerServer.Network.Sockets
                 messageLength = m_Socket.EndReceive(res);
                 if (messageLength == 0)
                 {
-                    if (Disconnected != null)
-                        Disconnected(this, null);
-
+                    Disconnect();
                     return;
                 }
 
@@ -144,11 +147,9 @@ namespace ConquerServer.Network.Sockets
                         Cipher.Decrypt(m_Buffer, HeaderSize, m_Buffer, HeaderSize, Offset - HeaderSize);
 
                         // dispatch the packet without the padding
-                        using (var p = new Packet(m_Buffer, Offset - Padding.Length))
-                        {
-                            if (Message != null)
-                                Message(this, p);
-                        }
+                        var p = new Packet(m_Buffer, Offset - Padding.Length);
+                        if (Message != null)
+                            Message(this, p);
 
                         Offset = 0;
                         ExpectedMessageSize = HeaderSize;
@@ -157,9 +158,7 @@ namespace ConquerServer.Network.Sockets
             }
             catch (SocketException ex)
             {
-                if (Disconnected != null)
-                    Disconnected(this,null);
-
+                Disconnect();
                 return;
             }
 

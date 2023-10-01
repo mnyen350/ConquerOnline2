@@ -52,8 +52,6 @@ namespace ConquerServer.Client
                 }
 
                 Equipment.Update(); // this will recalculate stats too
-
-
                 Send(p);
             }
             else if (mode == ActionType.Init_Associates)

@@ -54,8 +54,8 @@ namespace ConquerServer.Client
             item.Position = ItemPosition.Inventory;
 
             //update player via packet
-            Owner.SendItemInfo(item, ItemInfoAction.AddItem);
-
+            if (sendInfo)
+                Owner.SendItemInfo(item, ItemInfoAction.AddItem);
         }
 
         public bool TryRemove(int itemId)

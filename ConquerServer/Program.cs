@@ -61,10 +61,11 @@ namespace ConquerServer
                 GameClient existing;
                 if (client.World.TryGetPlayer(client.Id, out existing) && existing == client)
                 {
-                    // save their data
-                    await client.Database.SaveCharacter();
                     // remove them from the world
                     client.World.RemovePlayer();
+
+                    // save their data
+                    await client.Database.SaveCharacter();
 
                     Console.WriteLine($"{client.Id}:{client.Username} has disconnected");
                 }
