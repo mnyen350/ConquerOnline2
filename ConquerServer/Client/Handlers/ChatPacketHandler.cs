@@ -12,7 +12,7 @@ namespace ConquerServer.Client
     {
         [Network(PacketType.Chat)]
 
-        private void ChatPacketHandler(Packet p)
+        private async Task ChatPacketHandler(Packet p)
         {
             var timestamp = p.ReadUInt32(); // 5735
             var color = p.ReadInt32();

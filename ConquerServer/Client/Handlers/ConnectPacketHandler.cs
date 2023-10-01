@@ -10,7 +10,7 @@ namespace ConquerServer.Client
     public partial class GameClient
     {
         [Network(PacketType.Connect)]
-        private void ConnectPacketHandler(Packet p)
+        private async Task ConnectPacketHandler(Packet p)
         {
             int accountId = p.ReadInt32();
             int key = p.ReadInt32();
@@ -41,7 +41,7 @@ namespace ConquerServer.Client
             else
             {
                 // continue the login process
-                StartLoginSequence();
+                await StartLoginSequence();
             }
         }
     }

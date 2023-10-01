@@ -27,15 +27,15 @@ namespace ConquerServer.Client
         public IEnumerator<Item> GetEnumerator() => _items.GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => _items.GetEnumerator();
 
-        public bool TryAdd(Item item)
+        public bool TryAdd(Item item, bool sendInfo = true)
         {
             if (Items.Count >= 40) return false; 
-            Add(item); 
+            Add(item, sendInfo); 
             return true; 
         }
 
 
-        private void Add(Item item)
+        private void Add(Item item, bool sendInfo = true)
         {
             /*
              * picking things up

@@ -9,6 +9,19 @@ namespace ConquerServer
 {
     public static class Utility
     {
+        public static void Delay(DateTime when, Action callback)
+        {
+            int ms = (int)(when - DateTime.UtcNow).TotalMilliseconds;
+            //Console.WriteLine("Started delayed function expected to run in {0} ms", ms);
+
+            Task.Run(async () =>
+            {
+                await Task.Delay(ms);
+                callback();
+
+                //Console.WriteLine("Ran delayed function");
+            });
+        }
 
         public static bool IsDefined<T>(this T enumValue)
             where T : Enum

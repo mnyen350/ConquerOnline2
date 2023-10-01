@@ -10,7 +10,7 @@ namespace ConquerServer.Client
     public partial class GameClient
     {
         [Network(PacketType.Item)]
-        private void ItemPacketHandler(Packet p)
+        private async Task ItemPacketHandler(Packet p)
         {
             /*
              * this apparently has a million things it could be

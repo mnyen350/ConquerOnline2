@@ -13,7 +13,7 @@ namespace ConquerServer.Client
     public partial class GameClient
     {
         [Network(PacketType.Interact)]
-        private void InteractPacketHandler(Packet p)
+        private async Task InteractPacketHandler(Packet p)
         {
             uint timestamp1 = p.ReadUInt32();               // 4 (5735)
             uint timestamp2 = p.ReadUInt32();               // 8
@@ -51,8 +51,8 @@ namespace ConquerServer.Client
                         //typeid -> magictypemodel
                         //source.magic[typeid].attri
                         MagicTypeModel spell = this.Magics[data0].Attributes;
-                        Battle test = new Battle(this, target, x, y, spell);
-                        test.Start();
+                        Battle battle = new Battle(this, target, x, y, spell);
+                        await battle.Start();
                         break;
                     }
 

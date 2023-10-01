@@ -11,7 +11,7 @@ namespace ConquerServer.Client
     public partial class GameClient
     {
         [Network(PacketType.Action)]
-        private void ActionPacketHandler(Packet p)
+        private async Task ActionPacketHandler(Packet p)
         {
             uint timestamp1 = p.ReadUInt32();       // 4    int (supposedly always set)
             int uid = p.ReadInt32();                // 8    int
@@ -36,9 +36,24 @@ namespace ConquerServer.Client
                 // TO-DO: send guild info
                 // TO-DO: send hangup
 
+                FieldOfView.Move(this.MapId, this.X, this.Y); // update FOV
             }
             else if (mode == ActionType.Init_Items)
             {
+                foreach (var item in Inventory)
+                {
+                    this.SendItemInfo(item, ItemInfoAction.AddItem);
+                }
+
+                foreach (var equipment in Equipment)
+                {
+                    this.SendItemInfo(equipment, ItemInfoAction.AddItem);
+                    this.SendItemUse(ItemAction.Equip, equipment.Id, 0, (int)equipment.Position);
+                }
+
+                Equipment.Update(); // this will recalculate stats too
+
+
                 Send(p);
             }
             else if (mode == ActionType.Init_Associates)
@@ -51,10 +66,17 @@ namespace ConquerServer.Client
             }
             else if (mode == ActionType.Init_Spells)
             {
+                foreach (var magic in Magics.Values)
+                {
+                    this.SendSpellInfo(magic);
+                }
+
                 Send(p);
             }
             else if (mode == ActionType.Init_Guild) // last step of login seq
             {
+                this._loginSequenceCompleted = true;
+
                 Send(p);
             }
             else if (mode == ActionType.Jump)

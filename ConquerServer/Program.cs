@@ -15,8 +15,14 @@ namespace ConquerServer
         {
             #region testing
 
+            /*Task.Run(async () => 
+            {
+                await Task.Delay(1000);
+                Console.WriteLine("hi");
+            });
 
-            //Db.GetMagicTypeById()
+            Console.WriteLine("xdd");*/
+
 
             #endregion
 
@@ -49,17 +55,20 @@ namespace ConquerServer
             var client = socket.State as GameClient;
             if (client == null) return;
 
-            // if this player still exists in the world
-            GameClient existing;
-            if (client.World.TryGetPlayer(client.Id, out existing) && existing == client)
+            Task.Run(async () =>
             {
-                // save their data
-                client.Database.SaveCharacter();
-                // remove them from the world
-                client.World.RemovePlayer();
+                // if this player still exists in the world
+                GameClient existing;
+                if (client.World.TryGetPlayer(client.Id, out existing) && existing == client)
+                {
+                    // save their data
+                    await client.Database.SaveCharacter();
+                    // remove them from the world
+                    client.World.RemovePlayer();
 
-                Console.WriteLine($"{client.Id}:{client.Username} has disconnected");
-            }
+                    Console.WriteLine($"{client.Id}:{client.Username} has disconnected");
+                }
+            });
         }
 
         private static void Game_ClientMessage(ClientSocket socket, Packet p)
@@ -67,18 +76,23 @@ namespace ConquerServer
             if (socket.State == null) return;
             var client = (GameClient)socket.State;
 
-            try
+            Task.Run(async () =>
             {
-                if (!client.DispatchNetwork(p))
+
+                try
                 {
-                    Console.WriteLine(p.Dump("Unknown Packet"));
+                    if (!await client.DispatchNetwork(p))
+                    {
+                        Console.WriteLine(p.Dump("Unknown Packet"));
+                    }
                 }
-            }
-            catch (Exception ex)
-            {
-                client.Disconnect();
-                Console.WriteLine("Disconnected {0} because -\n{1}", client.Username, ex.ToString());
-            }
+                catch (Exception ex)
+                {
+                    client.Disconnect();
+                    Console.WriteLine("Disconnected {0} because -\n{1}", client.Username, ex.ToString());
+                }
+
+            });
         }
 
         private static void Game_ClientConnected(ClientSocket socket)
@@ -100,7 +114,7 @@ namespace ConquerServer
             if (socket.State == null) return;
 
             var client = (AuthClient)socket.State;
-            client.Process(p);
+            Task.Run(async () => await client.Process(p));
         }
     }
 }

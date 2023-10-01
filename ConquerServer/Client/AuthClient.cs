@@ -33,12 +33,12 @@ namespace ConquerServer.Client
             Database = new Db(null);
         }
 
-        public void ReplyToLogin(LoginErrorCode code)
+        public async Task ReplyToLogin(LoginErrorCode code)
         {
-            ReplyToLogin(0, (int)code, "", 0);
+            await ReplyToLogin(0, (int)code, "", 0);
         }
 
-        public void ReplyToLogin(int accountId, int sessionId, string ip, int port)
+        public async Task ReplyToLogin(int accountId, int sessionId, string ip, int port)
         {
             using (var p = new Packet(PacketBufferSize.SizeOf64))
             {
@@ -53,14 +53,15 @@ namespace ConquerServer.Client
             }
         }
 
-        public void Process(Packet p)
+        public async Task Process(Packet p)
         {
             var action = g_Network[p.Type];
-            action?.Invoke(this, p);
+            if (action != null)
+                await action(this, p);
         }
 
         [Network(PacketType.AccountSrp6Ex)]
-        public void AccountSrp6Ex(Packet p)
+        public async Task AccountSrp6Ex(Packet p)
         {
             p.ReadInt32();
             string username = p.ReadCString(16);

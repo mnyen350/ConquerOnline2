@@ -10,7 +10,7 @@ namespace ConquerServer.Client
     public partial class GameClient
     {
         [Network(PacketType.Walk)]
-        private void WalkPacketHandler(Packet p)
+        private async Task WalkPacketHandler(Packet p)
         {
             int direction = p.ReadInt32();
             int uid = p.ReadInt32();

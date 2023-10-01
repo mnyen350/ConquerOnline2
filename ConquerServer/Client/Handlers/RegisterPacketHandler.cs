@@ -10,7 +10,7 @@ namespace ConquerServer.Client
     public partial class GameClient 
     {
         [Network(PacketType.Register)]
-        private void RegisterPacketHandler(Packet p)
+        private async Task RegisterPacketHandler(Packet p)
         {
             p.Skip(20);
             var name = p.ReadCString(40);
@@ -42,10 +42,10 @@ namespace ConquerServer.Client
             short chkedJob = (short)(job / 10);
 
             // create the character
-            Database.CreateCharacter(Username, name, lookface, (short)(chkedJob * 10));
+            await Database.CreateCharacter(Username, name, lookface, (short)(chkedJob * 10));
 
             // continue with regular login sequence (ANSWER_OK and onwards)
-            StartLoginSequence();
+            await StartLoginSequence();
         }
     }
 }

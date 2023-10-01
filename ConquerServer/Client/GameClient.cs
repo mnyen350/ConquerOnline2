@@ -11,6 +11,7 @@ using System.Reflection.Metadata.Ecma335;
 using System.Security.Principal;
 using static System.Collections.Specialized.BitVector32;
 using System.Runtime.CompilerServices;
+using System.Reflection.Emit;
 
 namespace ConquerServer.Client
 {
@@ -26,6 +27,7 @@ namespace ConquerServer.Client
 
 
         private Dictionary<SynchronizeType, long> _sync;
+        private bool _loginSequenceCompleted;
 
         public ClientSocket Socket { get; private set; }
         public Db Database { get; private set; }
@@ -110,12 +112,12 @@ namespace ConquerServer.Client
             _sync = new Dictionary<SynchronizeType, long>();
         }
 
-        public bool DispatchNetwork(Packet msg)
+        public async Task<bool> DispatchNetwork(Packet msg)
         {
             var action = g_Network[msg.Type];
             if (action != null)
             {
-                action(this, msg);
+                await action(this, msg);
                 return true;
             }
             return false;
@@ -233,7 +235,7 @@ namespace ConquerServer.Client
 
         }
 
-        private void StartLoginSequence()
+        private async Task StartLoginSequence()
         {
             // is this character already logged in?
             var existingClient = World.Players.FirstOrDefault(g => g.Username == this.Username);
@@ -244,12 +246,12 @@ namespace ConquerServer.Client
                 // if so, then we need to disconnect
                 existingClient.Disconnect();    
                 // forcefully save it so that we load the most up to date character
-                existingClient.Database.SaveCharacter();
+                await existingClient.Database.SaveCharacter();
             }
             
             
             //load the existing/just created char/file
-            var lChar = Database.LoadCharacter();
+            var lChar = await Database.LoadCharacter();
 
             //in this instance of the game client, set the correct fields based off of lChar
             Id = lChar.Id;
@@ -282,11 +284,27 @@ namespace ConquerServer.Client
             Y = lChar.Y;
             MapId = lChar.MapId;
 
+            if (lChar.Rebirth > 0)
+            {
+                Strength = lChar.Strength;
+                Agility = lChar.Agility;
+                Vitality = lChar.Vitality;
+                Spirit = lChar.Spirit;
+            }
+            else
+            {
+                StatModel stat = Database.GetStats(Profession, Level);
+                Strength = stat.Strength;
+                Agility = stat.Agility;
+                Vitality = stat.Vitality;
+                Spirit = stat.Spirit;
+            }
+
             //Inventory
-            foreach(var model in lChar.Inventory.Take(Inventory.MaxSize))
+            foreach (var model in lChar.Inventory.Take(Inventory.MaxSize))
             {
                 Item item = new Item(model, this);
-                Inventory.TryAdd(item);
+                Inventory.TryAdd(item, false);
             }
 
             //Equipment
@@ -301,35 +319,26 @@ namespace ConquerServer.Client
             {
                 //Magic magic = new Magic(this, model.TypeId, model.Level, model.Experience);
                 //Magics.Add(model.TypeId, magic);
-                LearnMagic(model.TypeId, model.Level, model.Experience);
-            }
-                
-
-            if (lChar.Rebirth > 0)
-            {
-                Strength = lChar.Strength;
-                Agility = lChar.Agility;
-                Vitality = lChar.Vitality;
-                Spirit = lChar.Spirit;
-            }
-            else
-            {
-                StatModel stat =  Database.GetStats(Profession, Level);
-                Strength = stat.Strength;
-                Agility = stat.Agility;
-                Vitality = stat.Vitality;
-                Spirit = stat.Spirit;
+                LearnMagic(model.TypeId, model.Level, model.Experience, false);
             }
 
-            Equipment.Update(); // this will recalculate stats too
-
+            RecalculateStats();
             World.AddPlayer();
+
+            this._loginSequenceCompleted = false;
+            Utility.Delay(DateTime.UtcNow.AddSeconds(10), () =>
+            {
+                // client should complete login seq within 10s
+                if (!this._loginSequenceCompleted)
+                {
+                    this.Disconnect();
+                }
+            });
 
             SendChat(ChatMode.Entrance, "ANSWER_OK");
             SendMapConfirmation();
             SendServerTime();
             SendHeroInformation();
-            FieldOfView.Move(this.MapId, this.X, this.Y); // update FOV
         }
 
         public void Teleport(int x, int y) => Teleport(this.MapId, x, y);
@@ -343,19 +352,26 @@ namespace ConquerServer.Client
         }
 
         
-        public void LearnMagic(int typeId, int level=0, long experience =0) 
+        public void LearnMagic(int typeId, int level=0, long experience = 0, bool sendInfo = true) 
         {
             Magic magic = new Magic(this, typeId, level, experience);
             Magics[typeId] = magic; // add or update
 
             //send to player, the learned magic/skill
+            if (sendInfo)
+            {
+                SendSpellInfo(magic);
+            }
+        }
 
+        public void SendSpellInfo(Magic magic)
+        {
             using (var p = new Packet(32))
             {
                 p.WriteUInt32(TimeStamp.GetTime()); // 5735
-                p.WriteUInt32((uint)experience);
-                p.WriteUInt16((ushort)typeId);
-                p.WriteUInt16((ushort)level);
+                p.WriteUInt32((uint)magic.Experience);
+                p.WriteUInt16((ushort)magic.TypeId);
+                p.WriteUInt16((ushort)magic.Level);
                 p.WriteInt16((short)0);
                 p.WriteInt16((byte)0);
                 p.WriteInt32(0);
@@ -582,6 +598,26 @@ namespace ConquerServer.Client
             for (int i = 1; i < args.Length; i++)
                 p.WriteInt32(args[i]);
             p.Build(PacketType.Item);
+            return p;
+        }
+        public static Packet CreateInteraction(int senderId, int targetId, uint timestamp, int x, int y, InteractAction action, int data0, int data1, int data2, int data3)
+        {
+            Packet p = new Packet(64);
+            if (action == InteractAction.CastMagic)
+                EncodeMagicAttack(senderId, timestamp, ref data0, ref targetId, ref x, ref y);
+
+            p.WriteUInt32(TimeStamp.GetTime()); // 5735
+            p.WriteUInt32(timestamp);
+            p.WriteInt32(senderId);
+            p.WriteInt32(targetId);
+            p.WriteInt16((short)x);
+            p.WriteInt16((short)y);
+            p.WriteInt32((int)action);
+            p.WriteInt32(data0);
+            p.WriteInt32(data1);
+            p.WriteInt32(data2);
+            p.WriteInt32(data3);
+            p.Build(PacketType.Interact);
             return p;
         }
 

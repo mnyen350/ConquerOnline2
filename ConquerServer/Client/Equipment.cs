@@ -177,11 +177,12 @@ namespace ConquerServer.Client
             item.Owner = Owner;
             item.Position = position;
 
-            Owner.SendItemInfo(item, ItemInfoAction.AddItem);
-            Owner.SendItemUse(ItemAction.Equip, item.Id, 0, (int)position);
-
             if (update)
+            {
+                Owner.SendItemInfo(item, ItemInfoAction.AddItem);
+                Owner.SendItemUse(ItemAction.Equip, item.Id, 0, (int)position);
                 Update();
+            }
         }
         public void EquipFromInventory(int itemId)
         {

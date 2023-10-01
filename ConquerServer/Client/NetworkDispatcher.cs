@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 namespace ConquerServer.Client
 {
     public class NetworkDispatcher<TClient> 
-        : Dispatcher<PacketType, NetworkAttribute, Action<TClient, Packet>>
+        : Dispatcher<PacketType, NetworkAttribute, Func<TClient, Packet, Task>>
     {
         public NetworkDispatcher()
             : base(typeof(TClient))

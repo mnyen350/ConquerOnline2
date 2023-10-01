@@ -36,24 +36,24 @@ namespace ConquerServer.Combat
             CastY = castY;
         }
 
-        public void Start()
+        public async Task Start()
         {
             if (Spell == null)
             {
-                StartMelee();
+                await StartMelee();
             }
             else
             {
-                StartMagic();
+                await StartMagic();
             }
         }
 
-        private void StartMelee()
+        private async Task StartMelee()
         {
 
         }
 
-        private void StartMagic()
+        private async Task StartMagic()
         {
             if (Spell == null)
                 return;
@@ -77,6 +77,7 @@ namespace ConquerServer.Combat
             // filter these targets
             FilterTargets();
             // process doing the damage now to them
+
             ProcessTargets();
         }
 
@@ -123,6 +124,13 @@ namespace ConquerServer.Combat
             Targets.RemoveWhere(t => !IsPotentialTarget(t));
         }
 
+        private void BroadcastDeath(GameClient target)
+        {
+            int data0 = MathHelper.BitFold32(Spell != null ? 3 : 1, 0);
+            using (var p = GameClient.CreateInteraction(Source.Id, target.Id, 0, target.X, target.Y, InteractAction.Kill, data0, 0, 0, 0))
+                target.FieldOfView.Send(p, true);
+        }
+
         private void ProcessTargets()
         {
             if (Spell == null) return;
@@ -141,7 +149,15 @@ namespace ConquerServer.Combat
                         if (entity.IsDead)
                         {
                             entity.Health = 0;
-                            entity.Lookface = entity.Lookface.ToGhost();
+
+                            Utility.Delay(DateTime.UtcNow.AddSeconds(3), () =>
+                            {
+                                if (entity.IsDead)
+                                {
+                                    entity.Lookface = entity.Lookface.ToGhost();
+                                    entity.SendSynchronize(true);
+                                }
+                            });
                         }
                     }
                     p.Add(entity.Id, damage, miss ? 0 : 1, 0);
@@ -151,10 +167,17 @@ namespace ConquerServer.Combat
                 Source.FieldOfView.Send(p.End(), true);
             }
 
-            // sync all entites involved
-            foreach (var entity in Targets)
+            // sync all entites involved including Source
+            foreach (var entity in Targets.Concat(new[] { Source }))
+            {
                 entity.SendSynchronize(true);
-            Source.SendSynchronize(true);
+
+                Utility.Delay(DateTime.UtcNow.AddSeconds(0.1), () =>
+                {
+                    if (entity.IsDead)
+                        BroadcastDeath(entity);
+                });
+            }
         }
     }
 }

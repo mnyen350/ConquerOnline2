@@ -23,10 +23,14 @@ namespace ConquerServer.Database
         private static string _serverHost;
         private static List<PortalModel> _portals;
         private static Dictionary<int, ItemTypeModel> _itemTypes;
-        private static Dictionary<int, MagicTypeModel> _magicTypes; //is there a collection with 2 keys? would that be useful here? 
-        
+        private static Dictionary<int, MagicTypeModel> _magicTypes;
+        private static DbCore _core;
+
+        private static Thread _worker;
+        private static Queue<Action> _workQueue;
+
         private static string GetAccountFilePath(string username) => $"./database/Account/{username}.json";
-        private static string GetStatFilePath(Profession profession) => $"./database/Misc/{profession}.ini";
+        private static DbFile GetStatFile(Profession profession) => _core.SelectFile("Misc", $"{profession}.ini");
         private static string GetConfigFilePath() => $"./database/config.json";
         private static string GetPortalFilePath() => $"./database/Misc/Portals.txt";
         private static string GetItemTypeFilePath() => $"./database/Item/itemtype.txt";
@@ -34,10 +38,55 @@ namespace ConquerServer.Database
 
         static Db()
         {
+            _core = new DbCore("./database/");
             _authClients = new Dictionary<int, AuthClient>();
             _portals = new List<PortalModel>();
             _itemTypes = new Dictionary<int, ItemTypeModel>();
             _magicTypes = new Dictionary<int, MagicTypeModel>();
+            _workQueue = new Queue<Action>();
+            _worker = new Thread(ThreadTaskProcess);
+        }
+
+        private static void ThreadTaskProcess()
+        {
+            for (; ;)
+            {
+                if (_workQueue.Count > 0)
+                {
+                    var work = _workQueue.Dequeue();
+                    work();
+                }
+                Thread.Sleep(1);
+            }
+        }
+
+        private static Task<T> CreateTask<T>(Func<T> work)
+        {
+            var promise = new TaskCompletionSource<T>();
+            _workQueue.Enqueue(() =>
+            {
+                try
+                {
+                    var result = work();
+                    promise.TrySetResult(result);
+
+                }
+                catch (Exception ex)
+                {
+                    promise.TrySetException(ex);
+                }
+            });
+            return promise.Task;
+        }
+
+        private static Task CreateTask(Action work)
+        {
+            // wrap task inside of a Func<T> to call the other CreateTask method
+            return CreateTask(() =>
+            {
+                work();
+                return 0;
+            });
         }
 
         private static JsonSerializerOptions GetJsonSerializerOptions()
@@ -82,7 +131,7 @@ namespace ConquerServer.Database
                 // file doesn't exist, so create it with defaults
                 File.WriteAllText(path, Serialize(databaseConfig));
             }
-            
+
 
             // set internal variables
             _characterCounter = databaseConfig.CharacterCounter;
@@ -91,6 +140,9 @@ namespace ConquerServer.Database
 
 
             LoadPortals();
+
+            _worker.Start();
+
             Console.WriteLine("\tLoaded {0} portals", _portals.Count);
 
             int failedItems = LoadItems();
@@ -133,7 +185,7 @@ namespace ConquerServer.Database
         private static int LoadMagic()
         {
             MagicTypeModel? magicType;
-            string[] magicText = File.ReadAllLines(GetMagicTypeFilePath()); 
+            string[] magicText = File.ReadAllLines(GetMagicTypeFilePath());
 
             int failed = 0;
             foreach (string line in magicText)
@@ -167,7 +219,7 @@ namespace ConquerServer.Database
         public static ItemTypeModel GetItemTypeByTypeId(int id)
         {
             ItemTypeModel model;
-            
+
 
             if (!_itemTypes.TryGetValue(id, out model))
                 throw new DbException($"Item {id} does not exist within the database");
@@ -183,10 +235,10 @@ namespace ConquerServer.Database
             return model;
         }
 
-        public Dictionary<int, AuthClient> Auth {  get { return _authClients; } }
-        public IReadOnlyList<PortalModel> Portals { get { return _portals;  } }
+        public Dictionary<int, AuthClient> Auth { get { return _authClients; } }
+        public IReadOnlyList<PortalModel> Portals { get { return _portals; } }
         public IReadOnlyDictionary<int, ItemTypeModel> ItemTypes { get { return _itemTypes; } }
-        public string ServerHost {  get { return _serverHost; } }
+        public string ServerHost { get { return _serverHost; } }
         public int CharacterCounter
         {
             get { return _characterCounter; }
@@ -205,7 +257,7 @@ namespace ConquerServer.Database
             set
             {
                 _itemCounter = value;
-                SaveConfig() ;
+                SaveConfig();
             }
         }
 
@@ -224,48 +276,54 @@ namespace ConquerServer.Database
             if (File.Exists(GetAccountFilePath(username)))
             {
                 return true;
-            }            
+            }
             return false;
         }
 
-        public CharacterModel LoadCharacter(string? username = null )
+        public Task<CharacterModel> LoadCharacter(string? username = null)
         {
-            username = username ?? Owner.Username;
-            if (!HasCharacter(username))
-                throw new DbException("Character does not exist.");
-            
-            string charText = File.ReadAllText(GetAccountFilePath(username));
-            var regenChar = Deserialize<CharacterModel>(charText);
-            return regenChar;
+            return CreateTask(() =>
+            {
+                username = username ?? Owner.Username;
+                if (!HasCharacter(username))
+                    throw new DbException("Character does not exist.");
+
+                string charText = File.ReadAllText(GetAccountFilePath(username));
+                var regenChar = Deserialize<CharacterModel>(charText);
+                return regenChar;
+            });
         }
 
-        public void CreateCharacter(string username, string name, uint lookface, int job)
+        public Task CreateCharacter(string username, string name, uint lookface, int job)
         {
-            //throw error is char already exists
-            if (HasCharacter(username))
-                throw new DbException("This account already has a character");
-
-            //when there is not a character
-            //goal: create a file
-            //need: character model to serialize
-            //      data for character model received by game client
-            //      BEFORE this method is called
-            //      receive and store that data
-
-
-            CharacterModel model = new CharacterModel()
+            return CreateTask(() =>
             {
-                Name = name,
-                Lookface = (Lookface)lookface,
-                Job = job,
-                Id = CharacterCounter++,
-                Level = 1,
-                MapId = 1005,
-                X = 50,
-                Y = 50,
-            };
-            string serialize = Serialize(model); 
-            File.WriteAllText(GetAccountFilePath(username), serialize);
+                //throw error is char already exists
+                if (HasCharacter(username))
+                    throw new DbException("This account already has a character");
+
+                //when there is not a character
+                //goal: create a file
+                //need: character model to serialize
+                //      data for character model received by game client
+                //      BEFORE this method is called
+                //      receive and store that data
+
+
+                CharacterModel model = new CharacterModel()
+                {
+                    Name = name,
+                    Lookface = (Lookface)lookface,
+                    Job = job,
+                    Id = CharacterCounter++,
+                    Level = 1,
+                    MapId = 1005,
+                    X = 50,
+                    Y = 50,
+                };
+                string serialize = Serialize(model);
+                File.WriteAllText(GetAccountFilePath(username), serialize);
+            });
         }
 
         public Item CreateItem(int typeId)
@@ -287,7 +345,6 @@ namespace ConquerServer.Database
             generatedItem.MaxDurability = generatedItem.Attributes.Durabiliy;
             return generatedItem;
         }
-       
 
         public StatModel GetStats(Profession profession, int level)
         {
@@ -295,15 +352,14 @@ namespace ConquerServer.Database
 
             //pull from .ini here? 
             //gotta determine which .ini by using profession 
-            string path = GetStatFilePath(profession);
-            IniFile statFile = new IniFile(path);
+            var statFile = GetStatFile(profession);
 
             //pull by searching...job and level
             string slevel = level.ToString();
-            int str = statFile.GetInteger(slevel, "Strength");
-            int vit = statFile.GetInteger(slevel, "Vitality");
-            int agi = statFile.GetInteger(slevel, "Agility");
-            int spi = statFile.GetInteger(slevel, "Spirit");
+            int str = statFile.ReadInt32(slevel, "Strength", 0);
+            int vit = statFile.ReadInt32(slevel, "Vitality", 0);
+            int agi = statFile.ReadInt32(slevel, "Agility", 0);
+            int spi = statFile.ReadInt32(slevel, "Spirit", 0);
 
             //when unable to pull, values = 0 by default
             StatModel stats = new StatModel(str, vit, agi, spi);
@@ -311,13 +367,16 @@ namespace ConquerServer.Database
             return stats;
         }
 
-        public void SaveCharacter(GameClient? client = null)
+        public Task SaveCharacter(GameClient? client = null)
         {
-            client = client ?? Owner;
+            return CreateTask(() =>
+            {
+                client = client ?? Owner;
 
-            CharacterModel charModel = new CharacterModel(client);
-            string serialize = Serialize(charModel);
-            File.WriteAllText(GetAccountFilePath(client.Username), serialize);
+                CharacterModel charModel = new CharacterModel(client);
+                string serialize = Serialize(charModel);
+                File.WriteAllText(GetAccountFilePath(client.Username), serialize);
+            });
         }
     }
 }
