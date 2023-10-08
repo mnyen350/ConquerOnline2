@@ -1,6 +1,7 @@
 ﻿using ConquerServer.Database.Models;
 using ConquerServer.Client;
 using ConquerServer.Network;
+using ConquerServer.Shared;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,6 +12,8 @@ using System.Text.Json.Serialization;
 using System.Reflection;
 using System.Buffers;
 using System.Xml.Linq;
+using System.Diagnostics;
+using System.Net.NetworkInformation;
 
 namespace ConquerServer.Database
 {
@@ -24,6 +27,7 @@ namespace ConquerServer.Database
         private static List<PortalModel> _portals;
         private static Dictionary<int, ItemTypeModel> _itemTypes;
         private static Dictionary<int, MagicTypeModel> _magicTypes;
+        private static Dictionary<int, RevivePointModel> _revivePoints;
         private static DbCore _core;
 
         private static Thread _worker;
@@ -32,9 +36,10 @@ namespace ConquerServer.Database
         private static string GetAccountFilePath(string username) => $"./database/Account/{username}.json";
         private static DbFile GetStatFile(Profession profession) => _core.SelectFile("Misc", $"{profession}.ini");
         private static string GetConfigFilePath() => $"./database/config.json";
-        private static string GetPortalFilePath() => $"./database/Misc/Portals.txt";
+        private static string GetPortalsFilePath() => $"./database/Misc/Portals.txt";
         private static string GetItemTypeFilePath() => $"./database/Item/itemtype.txt";
         private static string GetMagicTypeFilePath() => $"./database/Misc/magictype.txt";
+        private static string GetRevivePointsFilePath() => $"./database/Misc/RevivePoints.txt";
 
         static Db()
         {
@@ -43,6 +48,7 @@ namespace ConquerServer.Database
             _portals = new List<PortalModel>();
             _itemTypes = new Dictionary<int, ItemTypeModel>();
             _magicTypes = new Dictionary<int, MagicTypeModel>();
+            _revivePoints = new Dictionary<int, RevivePointModel>();
             _workQueue = new Queue<Action>();
             _worker = new Thread(ThreadTaskProcess);
         }
@@ -151,11 +157,14 @@ namespace ConquerServer.Database
             int failedMagic = LoadMagic();
             Console.WriteLine("\tLoaded {0} magic, {1} invalid", _magicTypes.Count, failedMagic);
 
+            int failedRevivePoints = LoadRevivePoints();
+            Console.WriteLine("\tLoaded {0} revivePoints, {1} invalid", _revivePoints.Count, failedRevivePoints);
+
         }
         private static void LoadPortals()
         {
             //read portals.txt as lines
-            string[] portalText = File.ReadAllLines(GetPortalFilePath());
+            string[] portalText = File.ReadAllLines(GetPortalsFilePath());
             //split lines and assign values as needed
             foreach (string line in portalText)
             {
@@ -206,6 +215,29 @@ namespace ConquerServer.Database
             return failed;
         }
 
+        private static int LoadRevivePoints()
+        {
+            RevivePointModel? rpm;
+            string[] reviveText = File.ReadAllLines(GetRevivePointsFilePath());
+
+            int failCount =0;
+            foreach (string line in reviveText)
+            {
+                try
+                {
+                    rpm = RevivePointModel.Parse(line);
+                    _revivePoints.Add(rpm.DeathMapId, rpm);
+
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(line);
+                    Console.WriteLine(ex.ToString());
+                    failCount++;
+                }
+            }
+            return failCount;
+        }
         public static void SaveConfig()
         {
             DatabaseConfig databaseConfig = new DatabaseConfig()
@@ -236,7 +268,13 @@ namespace ConquerServer.Database
                 throw new DbException($"Magic {type}-{level} does not exist within the database");
             return model;
         }
-
+        public static RevivePointModel GetRevivePoint(int mapId)
+        {
+            RevivePointModel? model;
+            if (!_revivePoints.TryGetValue(mapId, out model))
+                throw new DbException($"MapId {mapId} does not have a revive point");    
+            return model;
+        }
         public Dictionary<int, AuthClient> Auth { get { return _authClients; } }
         public IReadOnlyList<PortalModel> Portals { get { return _portals; } }
         public IReadOnlyDictionary<int, ItemTypeModel> ItemTypes { get { return _itemTypes; } }
@@ -270,6 +308,7 @@ namespace ConquerServer.Database
             Owner = owner;
         }
 
+        public RevivePointModel GetRevivePoint() => GetRevivePoint(Owner.MapId);
 
         public bool HasCharacter(string? username = null)
         {

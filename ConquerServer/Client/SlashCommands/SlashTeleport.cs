@@ -15,6 +15,8 @@ namespace ConquerServer.Client
             // teleport as requested (/teleport 1002 400 400)
 #warning assuming all given mapIds are valid, sanity check later
 
+            int[] ints = new int[] { this.MapId, this.X, this.Y };
+
             //teleporting
             this.Teleport(int.Parse(messageContents[1]), int.Parse(messageContents[2]), int.Parse(messageContents[3]));
         }

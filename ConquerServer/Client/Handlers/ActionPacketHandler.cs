@@ -1,5 +1,7 @@
 ﻿using ConquerServer.Database.Models;
 using ConquerServer.Network;
+using ConquerServer.Network.Packets;
+using ConquerServer.Shared;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -60,14 +62,15 @@ namespace ConquerServer.Client
             }
             else if (mode == ActionType.Init_Proficiencies)
             {
+                foreach (var prof in Proficiencies.Values)
+                    prof.Send();
+
                 Send(p);
             }
             else if (mode == ActionType.Init_Spells)
             {
                 foreach (var magic in Magics.Values)
-                {
-                    this.SendSpellInfo(magic);
-                }
+                    magic.Send();
 
                 Send(p);
             }
@@ -148,6 +151,26 @@ namespace ConquerServer.Client
                     this.PKMode = pk;
                     this.Send(p);
                 }
+            }
+            else if(mode == ActionType.Revive)
+            {
+                if (!CanRevive || !IsDead) return;
+                
+                //remove ghostface from lookface
+                Lookface = Lookface.Normalize();
+
+                //remove "death" and "ghost" flags from status
+                Status -= StatusFlag.Ghost + StatusFlag.Death;
+
+                //teleport player to the revive coordinates
+                RevivePointModel rpm = Database.GetRevivePoint();
+                this.Teleport(rpm.ReviveMapId, rpm.X, rpm.Y);
+
+                //refill health
+                this.Health = this.MaxHealth;
+
+                //syncronize the stats with client
+                this.SendSynchronize(true);
             }
             else
             {

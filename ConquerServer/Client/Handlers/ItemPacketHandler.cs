@@ -1,4 +1,5 @@
 ﻿using ConquerServer.Network;
+using ConquerServer.Shared;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -35,9 +36,21 @@ namespace ConquerServer.Client
                     SendSystemMessage("Unable to equip item, item not in inventory");
                     return;
                 }
-                //try equiping
-                this.Equipment.EquipFromInventory(item.Id);
+                else
+                {
+                    ItemPosition? overridePosition = null;
 
+                    if (item.EquipPosition == ItemPosition.Set1Weapon1)
+                    {
+                        if (Profession == Profession.Warrior && item.Sort == ItemSort.Shield) // warrior shields always go into 2nd hand
+                            overridePosition = ItemPosition.Set1Weapon2;
+                        else if (Profession == Profession.Trojan && Equipment[ItemPosition.Set1Weapon1] != null) // trojan weapons go into 2nd hand if 1st hand used
+                            overridePosition = ItemPosition.Set1Weapon2;
+                    }
+
+                    this.Equipment.EquipFromInventory(item.Id, overridePosition);
+
+                }
             }
             else if(action == ItemAction.Unequip) 
             {

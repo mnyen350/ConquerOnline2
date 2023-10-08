@@ -3,15 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using ConquerServer.Shared;
 using ConquerServer.Network;
 using ConquerServer.Network.Sockets;
+using ConquerServer.Network.Packets;
 using ConquerServer.Database;
 using ConquerServer.Database.Models;
-using System.Reflection.Metadata.Ecma335;
-using System.Security.Principal;
-using static System.Collections.Specialized.BitVector32;
-using System.Runtime.CompilerServices;
-using System.Reflection.Emit;
 
 namespace ConquerServer.Client
 {
@@ -36,6 +33,7 @@ namespace ConquerServer.Client
         public Inventory Inventory { get; private set; }
         public Equipment Equipment { get; private set; }
         public Dictionary<int, Magic> Magics { get; private set; }
+        public Dictionary<int, Proficiency> Proficiencies { get; private set; }
         public string Username { get; private set; }
         public string Server { get; private set; }
         public int Id { get; set; }
@@ -55,6 +53,7 @@ namespace ConquerServer.Client
         public int MaxHealth { get; set; }
         public int Mana { get; set; }
         public int MaxMana { get; set; }
+        public int Stamina { get; set; }
         public int PKPoints { get; set; }
         public int Level { get; set; }
         public int Job { get; set; }
@@ -94,6 +93,7 @@ namespace ConquerServer.Client
 
         }
         public PKMode PKMode { get; private set; }
+        public bool CanRevive { get; set; }
 
 #warning, need a hostility/name flashing/name red whatever PKPOINTS 
 
@@ -110,6 +110,7 @@ namespace ConquerServer.Client
             Inventory = new Inventory(this);
             Equipment = new Equipment(this);
             Magics = new Dictionary<int, Magic>();
+            Proficiencies = new Dictionary<int, Proficiency>();
             Status = StatusFlag.None;
             _sync = new Dictionary<SynchronizeType, long>();
         }
@@ -294,7 +295,7 @@ namespace ConquerServer.Client
             }
             else
             {
-                StatModel stat = Database.GetStats(Profession, Level);
+                StatModel stat = Database.GetStats(Profession, Math.Min(120, Level));
                 Strength = stat.Strength;
                 Agility = stat.Agility;
                 Vitality = stat.Vitality;
@@ -323,6 +324,12 @@ namespace ConquerServer.Client
                 LearnMagic(model.TypeId, model.Level, model.Experience, false);
             }
 
+            //Proficiencies
+            foreach(var model in lChar.Proficiencies)
+            {
+                LearnProficiency((ProficiencyType)model.TypeId, model.Level, model.Experience, false);
+            }
+
             RecalculateStats();
             World.AddPlayer();
 
@@ -337,8 +344,11 @@ namespace ConquerServer.Client
             });
 
             SendChat(ChatMode.Entrance, "ANSWER_OK");
-            SendMapConfirmation();
-            SendServerTime();
+            using( var stip = new ServerTimeInfoPacket())
+                Send(stip);
+            using (var lmp = new LoadMapPacket(this.MapId))
+                Send(lmp);
+            
             SendHeroInformation();
         }
 
@@ -352,33 +362,21 @@ namespace ConquerServer.Client
             FieldOfView.Move(mapId, x, y);
         }
 
-        
         public void LearnMagic(int typeId, int level=0, long experience = 0, bool sendInfo = true) 
         {
             Magic magic = new Magic(this, typeId, level, experience);
             Magics[typeId] = magic; // add or update
 
-            //send to player, the learned magic/skill
             if (sendInfo)
-            {
-                SendSpellInfo(magic);
-            }
+                magic.Send();
         }
-
-        public void SendSpellInfo(Magic magic)
+        public void LearnProficiency(ProficiencyType typeId, int level = 0, long experience = 0, bool sendInfo = true)
         {
-            using (var p = new Packet(32))
-            {
-                p.WriteUInt32(TimeStamp.GetTime()); // 5735
-                p.WriteUInt32((uint)magic.Experience);
-                p.WriteUInt16((ushort)magic.TypeId);
-                p.WriteUInt16((ushort)magic.Level);
-                p.WriteInt16((short)0);
-                p.WriteInt16((byte)0);
-                p.WriteInt32(0);
-                p.Build(PacketType.MagicInfo);
-                Send(p);
-            }
+            Proficiency prof = new Proficiency(this, typeId, level, experience);
+            Proficiencies[prof.TypeId] = prof;
+
+            if(sendInfo) 
+                prof.Send();
         }
 
         private Dictionary<SynchronizeType, long> CreateSynchronize()
@@ -389,7 +387,7 @@ namespace ConquerServer.Client
                 { SynchronizeType.MaxLife, MaxHealth },
                 { SynchronizeType.Mana, Mana },
                 { SynchronizeType.MaxMana, MaxMana },
-                { SynchronizeType.Stamina, 100 },
+                { SynchronizeType.Stamina, Stamina },
                 { SynchronizeType.Lookface, (long)Lookface }
             };
         }
@@ -428,8 +426,6 @@ namespace ConquerServer.Client
             // update old sync
             _sync = newSync;
         }
-
-
         public void SendChat(ChatMode mode, string words)
         {
             using (var msg = new ChatPacket(mode, words))
@@ -437,41 +433,6 @@ namespace ConquerServer.Client
                 Send(msg);
             }
         }
-
-        public void SendMapConfirmation()
-        {
-            using (var p = new Packet(20))
-            {
-                p.WriteUInt32(TimeStamp.GetTime()); // 5735
-                p.WriteInt32(0);
-                p.WriteInt32(1);
-                p.WriteInt32(MapId);
-                p.Build(PacketType.LoadMap);
-                Send(p);
-            }
-        }
-
-        public void SendServerTime()
-        {
-            DateTime time = DateTime.Now; // get local time
-            using (var p = new Packet(40))
-            {
-
-                p.WriteUInt32(TimeStamp.GetTime()); // 5735
-                p.WriteInt32(0); // type
-                p.WriteInt32(time.Year - 1900);
-                p.WriteInt32(time.Month - 1);
-                p.WriteInt32(time.DayOfYear);
-                p.WriteInt32(time.Day);
-                p.WriteInt32(time.Hour);
-                p.WriteInt32(time.Minute);
-                p.WriteInt32(time.Second);
-                p.Build(PacketType.Data);
-                Send(p);
-            }
-        }
-
-        
         public void SendHeroInformation()
         {
             using (var p = new Packet(PacketBufferSize.SizeOf512))
@@ -531,7 +492,6 @@ namespace ConquerServer.Client
             using (var p = CreateItemUse(action, id, timeStamp, args))
                 Send(p);
         }
-
         public void SendItemInfo(Item item, ItemInfoAction action, bool extended = false)
         {
             using (Packet msg = new Packet(128))
@@ -622,7 +582,6 @@ namespace ConquerServer.Client
             p.Build(PacketType.Interact);
             return p;
         }
-
         public static Packet CreateAction(int id, int posX, int posY, int dir, ActionType mode, long data)
         {
             var p = new Packet(64);
@@ -826,7 +785,6 @@ namespace ConquerServer.Client
             // Log.Write("{0}", msg.Dump());
             return msg;
         }
-
         public static Packet CreateDespawnPacket(GameClient e)
         {
             return CreateAction(e.Id, 0, 0, 0, ActionType.RemoveEntity, 0);

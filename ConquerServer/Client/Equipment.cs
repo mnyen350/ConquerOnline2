@@ -184,7 +184,7 @@ namespace ConquerServer.Client
                 Update();
             }
         }
-        public void EquipFromInventory(int itemId)
+        public void EquipFromInventory(int itemId, ItemPosition? position = null)
         {
             Item? equipment = Owner.Inventory.FirstOrDefault(i => i.Id == itemId);
             if (equipment == null)
@@ -193,12 +193,12 @@ namespace ConquerServer.Client
                 return;
             }
 
-            ItemPosition position = equipment.EquipPosition;
+            ItemPosition equipPosition = position ?? equipment.EquipPosition;
 
             Owner.Inventory.TryRemove(itemId);
 
-            UnequipToInventory(position);
-            Equip(equipment, position);
+            UnequipToInventory(equipPosition);
+            Equip(equipment, equipPosition);
         }
 
         public bool UnequipToInventory(ItemPosition position)

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Text.Json.Serialization;
 using System.Text.Json;
 using ConquerServer.Client;
+using ConquerServer.Shared;
 
 namespace ConquerServer.Database.Models
 {
@@ -44,6 +45,7 @@ namespace ConquerServer.Database.Models
         public List<ItemModel> Inventory { get; set; }
         public List<ItemModel> Equipment { get; set; }
         public List<MagicModel> Magics { get; set; }
+        public List<ProficiencyModel> Proficiencies { get; set; }
 
         public CharacterModel()
         {
@@ -54,6 +56,7 @@ namespace ConquerServer.Database.Models
             Inventory = new List<ItemModel>();
             Equipment = new List<ItemModel>();
             Magics = new List<MagicModel>();
+            Proficiencies = new List<ProficiencyModel>();   
         }
 
         public CharacterModel(GameClient client)
@@ -95,6 +98,7 @@ namespace ConquerServer.Database.Models
             this.Inventory = client.Inventory.Select(i => new ItemModel(i)).ToList();
             this.Equipment = client.Equipment.Select(i => new ItemModel(i)).ToList();
             this.Magics = client.Magics.Values .Select(i => new MagicModel(i)).ToList();
+            this.Proficiencies = client.Proficiencies.Values.Select(i=> new ProficiencyModel(i)).ToList();
         }
         
       

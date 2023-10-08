@@ -1,6 +1,8 @@
 ﻿using ConquerServer.Client;
 using ConquerServer.Database.Models;
 using ConquerServer.Network;
+using ConquerServer.Network.Packets;
+using ConquerServer.Shared;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
@@ -50,7 +52,8 @@ namespace ConquerServer.Combat
 
         private async Task StartMelee()
         {
-
+            FilterTargets();
+            ProcessTargets();
         }
 
         private async Task StartMagic()
@@ -131,31 +134,66 @@ namespace ConquerServer.Combat
                 target.FieldOfView.Send(p, true);
         }
 
+        private bool IsDodgeDamage()
+        {
+            if (Source.Equipment[ItemPosition.Set1Weapon1]?.SubType == ItemType.Bow && 
+                Source.Equipment[ItemPosition.Set1Weapon2]?.SubType == ItemType.Arrow)
+            {
+                return true;
+            }
+            return false;
+        }
+
+        private DamageAlgorithm GetDamageAlgorithm(GameClient target)
+        {
+            if (Spell != null && Spell.UseMP > 0)
+            {
+                return new MagicAlgorithm(Source, target, Spell);
+            }
+            else if (IsDodgeDamage())
+            {
+                return new DodgeAlgorithm(Source, target, Spell);
+            }
+            else
+            {
+                return new PhysicalAlgorithm(Source, target, Spell);
+            }
+        }
+
         private void ProcessTargets()
         {
-            if (Spell == null) return;
+         
+            var damage = new Dictionary<int, (int, bool)>();
 
-            // calculate damage done to each target, and send the damage packet to each target
-            using (var p = new MagicEffectPacket()
-                            .Begin(Source.Id, CastX, CastY, Spell.Type, Spell.Level, 0))
+            foreach (var target in Targets)
             {
-                foreach (var entity in Targets)
+                var algorithm = GetDamageAlgorithm(target);
+                var hit = algorithm.Calculate();
+                target.Health -= hit;
+                damage.Add(target.Id, (hit, false));
+            }
+
+            if (Spell != null)
+            {
+                // send the damage packet to each target
+                using (var p = new MagicEffectPacket()
+                                .Begin(Source.Id, CastX, CastY, Spell.Type, Spell.Level, 0))
                 {
-                    int damage = 123;
-                    bool miss = false;
-                    if (!miss)
-                    {
-                        entity.Health -= damage;
-                        if (entity.IsDead)
-                        {
-                            entity.Health = 0;
-                        }
-                    }
-                    p.Add(entity.Id, damage, miss ? 0 : 1, 0);
+                    foreach (var kvp in damage)
+                        p.Add(kvp.Key, kvp.Value.Item1, kvp.Value.Item2 ? 0 : 1, 0);
+                    
+                    Source.FieldOfView.Send(p.End(), true);
                 }
-
-
-                Source.FieldOfView.Send(p.End(), true);
+            }
+            else
+            {
+                // TO-DO: archer damage
+                foreach (var kvp in damage)
+                {
+                    var action = InteractAction.Attack;
+                    using (var p = GameClient.CreateInteraction(Source.Id, kvp.Key, 0, Source.X, Source.Y, action, kvp.Value.Item1, 0, 0, 0))
+                        Source.FieldOfView.Send(p, true);
+                }
             }
 
             // sync all entites involved including Source
@@ -178,6 +216,12 @@ namespace ConquerServer.Combat
                         entity.Status += StatusFlag.Ghost;
                         entity.Lookface = entity.Lookface.ToGhost();
                         entity.SendSynchronize(true);
+                        Console.WriteLine($"{entity.Name} {entity.Lookface.ToUInt32()}");
+
+                        await Task.Delay(TimeSpan.FromSeconds(16.5));
+
+                        if (!entity.IsDead) return;
+                        entity.CanRevive = true;
                     });
                 }
 

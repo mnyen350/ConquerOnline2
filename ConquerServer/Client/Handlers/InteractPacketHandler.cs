@@ -27,12 +27,19 @@ namespace ConquerServer.Client
             int data2 = p.ReadInt32();                      // 36
             int data3 = p.ReadInt32();                      // 40
 
+
+            GameClient? target;
+
             switch (action)
             {
-                case InteractAction.Attack:
                 case InteractAction.Shoot:
+                case InteractAction.Attack:
                     {
-                        // melee attacks
+                        if (World.TryGetPlayer(targetId, out target))
+                        {
+                            Battle battle = new Battle(this, target);
+                            await battle.Start();
+                        }
                         break;
                     }
                 case InteractAction.CastMagic:
@@ -43,7 +50,7 @@ namespace ConquerServer.Client
 
                         Console.WriteLine("{0} {1} {2} {3} {4}", senderId, data0, targetId, x, y);
 
-                        GameClient? target = this;
+                        target = this;
                         if (targetId != senderId)
                             World.TryGetPlayer(targetId, out target);
                         

@@ -1,9 +1,10 @@
-﻿using ConquerServer.Network;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using ConquerServer.Shared;
+using ConquerServer.Network;
 
 namespace ConquerServer.Client
 {

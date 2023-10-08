@@ -6,6 +6,7 @@ using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using System.Threading.Tasks;
 using ConquerServer.Network;
+using ConquerServer.Shared;
 
 namespace ConquerServer.Client
 {

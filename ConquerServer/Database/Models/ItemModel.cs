@@ -1,4 +1,5 @@
-﻿using ConquerServer.Network;
+﻿using ConquerServer.Client;
+using ConquerServer.Network;
 using System;
 using System.Collections.Generic;
 using System.Linq;

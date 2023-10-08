@@ -820,7 +820,7 @@ namespace ConquerServer.Network
             Build((PacketType)type);
         }
 
-        public void Build()
+        public virtual void Build()
         {
             Size = Offset;
         }

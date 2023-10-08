@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using ConquerServer.Network.Packets;
 
 namespace ConquerServer.Client
 {
@@ -12,13 +13,8 @@ namespace ConquerServer.Client
         [SlashCommand("test")]
         private void SlashTest(string[] messageContents) 
         {
-            using (var p = new SynchronizePacket()
-                                    .Begin(this.Id)
-                                    .Synchronize(SynchronizeType.Stamina, 100)
-                                    .End())
-            {
-                this.Send(p);
-            }
+            this.Stamina = 100;
+            this.SendSynchronize(false);            
         }
     }
 }
