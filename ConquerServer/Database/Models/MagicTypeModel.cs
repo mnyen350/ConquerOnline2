@@ -78,7 +78,7 @@ namespace ConquerServer.Database.Models
         public int UseMP { get; set; }
         /// /// ///////////////
         public int Power { get; set; }
-        public int Unknown2 { get; set; }
+        public int DelayCast { get; set; }
         public int Accuracy { get; set; }
         public int StepSecond { get; set; }
         public int Range { get; set; }
@@ -146,7 +146,7 @@ namespace ConquerServer.Database.Models
             model.UseMP = int.Parse(split[9]);
 
             model.Power = int.Parse(split[10]);
-            model.Unknown2 = int.Parse(split[11]);
+            model.DelayCast = int.Parse(split[11]);
             model.Accuracy = int.Parse(split[12]);
             model.StepSecond = int.Parse(split[13]);
             model.Range = int.Parse(split[14]);

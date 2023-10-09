@@ -84,7 +84,7 @@ namespace ConquerServer
                 {
                     if (!await client.DispatchNetwork(p))
                     {
-                        Console.WriteLine(p.Dump("Unknown Packet"));
+                        //Console.WriteLine(p.Dump("Unknown Packet"));
                     }
                 }
                 catch (Exception ex)

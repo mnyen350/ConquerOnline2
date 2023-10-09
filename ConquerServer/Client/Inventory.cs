@@ -6,6 +6,7 @@ using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using System.Threading.Tasks;
 using ConquerServer.Network;
+using ConquerServer.Network.Packets;
 using ConquerServer.Shared;
 
 namespace ConquerServer.Client
@@ -64,7 +65,8 @@ namespace ConquerServer.Client
             Item? item = Items.FirstOrDefault(i => i.Id == itemId);
             if (item == null) return false;
             _items.Remove(item);
-            Owner.SendItemUse(ItemAction.Drop, itemId);
+            using (ItemUsePacket iup = new ItemUsePacket(ItemAction.Drop, item.Id))
+                Owner.Send(iup);
             return true;
         }
     }

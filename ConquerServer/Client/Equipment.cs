@@ -1,4 +1,5 @@
 ﻿using ConquerServer.Network;
+using ConquerServer.Network.Packets;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -180,7 +181,10 @@ namespace ConquerServer.Client
             if (update)
             {
                 Owner.SendItemInfo(item, ItemInfoAction.AddItem);
-                Owner.SendItemUse(ItemAction.Equip, item.Id, 0, (int)position);
+
+                using (ItemUsePacket iup = new ItemUsePacket(ItemAction.Equip, item.Id, (int)position))
+                    Owner.Send(iup);
+
                 Update();
             }
         }
@@ -212,7 +216,9 @@ namespace ConquerServer.Client
                 {
                     // if successful in adding it to the inventory...
                     _equipped.Remove(position);
-                    Owner.SendItemUse(ItemAction.Unequip, existing.Id, 0, (int)position);
+
+                    using (ItemUsePacket iup = new ItemUsePacket(ItemAction.Unequip, existing.Id, (int)position))
+                        Owner.Send(iup);
 
                     Update();
                     return true;
@@ -226,28 +232,29 @@ namespace ConquerServer.Client
         }
         public void Update()
         {
-            var idArray = new int[4 + 13]; // 3 zeroes and 13 equipment places
+            var idArray = new int[3 + 13]; // 3 zeroes and 13 equipment places
                                            // idArray[0] should be either 0 or 1 depending on the equipment mode (main/sub)
             for (int i = 1; i < idArray.Length; i++)
                 idArray[i] = -1;
 
-            Func<ItemPosition, int> id = (p) => _equipped.ContainsKey(p) ? _equipped[p].Id : -1;
+            Func<ItemPosition, int> id = (p) => this[p]?.Id ?? -1; //_equipped.ContainsKey(p) ? _equipped[p].Id : -1;
 
-            idArray[4] = id(ItemPosition.Set1Helmet);
-            idArray[5] = id(ItemPosition.Set1Necklace);
-            idArray[6] = id(ItemPosition.Set1Armor);
-            idArray[7] = id(ItemPosition.Set1Weapon1);
-            idArray[8] = id(ItemPosition.Set1Weapon2);
-            idArray[9] = id(ItemPosition.Set1Ring);
-            idArray[10] = id(ItemPosition.Set1Gourd);
-            idArray[11] = id(ItemPosition.Set1Boots);
-            idArray[12] = id(ItemPosition.Set1Garment);
-            idArray[13] = id(ItemPosition.W1Accessory);
-            idArray[14] = id(ItemPosition.W2Accessory);
-            idArray[15] = id(ItemPosition.Steed);
-            idArray[16] = id(ItemPosition.Crop);
+            idArray[3] = id(ItemPosition.Set1Helmet);
+            idArray[4] = id(ItemPosition.Set1Necklace);
+            idArray[5] = id(ItemPosition.Set1Armor);
+            idArray[6] = id(ItemPosition.Set1Weapon1);
+            idArray[7] = id(ItemPosition.Set1Weapon2);
+            idArray[8] = id(ItemPosition.Set1Ring);
+            idArray[9] = id(ItemPosition.Set1Gourd);
+            idArray[10] = id(ItemPosition.Set1Boots);
+            idArray[11] = id(ItemPosition.Set1Garment);
+            idArray[12] = id(ItemPosition.W1Accessory);
+            idArray[13] = id(ItemPosition.W2Accessory);
+            idArray[14] = id(ItemPosition.Steed);
+            idArray[15] = id(ItemPosition.Crop);
 
-            Owner.SendItemUse(ItemAction.Equipment, 0, 0, idArray);
+            using (ItemUsePacket iup = new ItemUsePacket(ItemAction.Equipment, 0, 0, idArray))
+                Owner.Send(iup);
             Owner.RecalculateStats();
         }
     }

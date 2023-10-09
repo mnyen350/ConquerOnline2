@@ -74,6 +74,8 @@ namespace ConquerServer.Combat
                 Source.SendSystemMessage("Spell requested failed, magic type not handled");
                 return;
             }
+
+            await Task.Delay(Spell.DelayCast);
             
             // find elligible targets to be hit
             findTargets(this);
@@ -130,8 +132,9 @@ namespace ConquerServer.Combat
         private void BroadcastDeath(GameClient target)
         {
             int data0 = MathHelper.BitFold32(Spell != null ? 3 : 1, 0);
-            using (var p = GameClient.CreateInteraction(Source.Id, target.Id, 0, target.X, target.Y, InteractAction.Kill, data0, 0, 0, 0))
-                target.FieldOfView.Send(p, true);
+            using (InteractPacket ip = new InteractPacket(Source.Id, target.Id, target.X ,target.Y, InteractAction.Kill, data0, 0,0,0))
+                target.FieldOfView.Send(ip, true);
+           
         }
 
         private bool IsDodgeDamage()
@@ -191,8 +194,8 @@ namespace ConquerServer.Combat
                 foreach (var kvp in damage)
                 {
                     var action = InteractAction.Attack;
-                    using (var p = GameClient.CreateInteraction(Source.Id, kvp.Key, 0, Source.X, Source.Y, action, kvp.Value.Item1, 0, 0, 0))
-                        Source.FieldOfView.Send(p, true);
+                    using (InteractPacket ip = new InteractPacket(Source.Id, kvp.Key, Source.X, Source.Y, action, kvp.Value.Item1, 0, 0, 0))
+                        Source.FieldOfView.Send(ip, true);
                 }
             }
 

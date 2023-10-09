@@ -145,6 +145,7 @@ namespace ConquerServer.Client
 
         public void Send(Packet msg)
         {
+            Console.WriteLine(msg.Dump("Sending"));
             Socket.Send(msg);
         }
 
@@ -484,14 +485,7 @@ namespace ConquerServer.Client
 
 
         #region CREATE methods
-        public void SendItemUse(ItemAction action, int id, uint timeStamp = 0, params int[] args)
-        {
-            if (timeStamp == 0)
-                timeStamp = TimeStamp.GetTime();
-
-            using (var p = CreateItemUse(action, id, timeStamp, args))
-                Send(p);
-        }
+        
         public void SendItemInfo(Item item, ItemInfoAction action, bool extended = false)
         {
             using (Packet msg = new Packet(128))
@@ -549,39 +543,7 @@ namespace ConquerServer.Client
             //        Send(p);
             //}
         }
-        public static Packet CreateItemUse(ItemAction action, int id, uint ts, params int[] args)
-        {
-            var p = new Packet(128);
-            p.WriteUInt32(TimeStamp.GetTime()); // 5735
-            p.WriteInt32(id);
-            p.WriteInt32(args.Length > 0 ? args[0] : 0);
-            p.WriteInt32((int)action);
-            p.WriteUInt32(ts);
-            for (int i = 1; i < args.Length; i++)
-                p.WriteInt32(args[i]);
-            p.Build(PacketType.Item);
-            return p;
-        }
-        public static Packet CreateInteraction(int senderId, int targetId, uint timestamp, int x, int y, InteractAction action, int data0, int data1, int data2, int data3)
-        {
-            Packet p = new Packet(64);
-            if (action == InteractAction.CastMagic)
-                EncodeMagicAttack(senderId, timestamp, ref data0, ref targetId, ref x, ref y);
-
-            p.WriteUInt32(TimeStamp.GetTime()); // 5735
-            p.WriteUInt32(timestamp);
-            p.WriteInt32(senderId);
-            p.WriteInt32(targetId);
-            p.WriteInt16((short)x);
-            p.WriteInt16((short)y);
-            p.WriteInt32((int)action);
-            p.WriteInt32(data0);
-            p.WriteInt32(data1);
-            p.WriteInt32(data2);
-            p.WriteInt32(data3);
-            p.Build(PacketType.Interact);
-            return p;
-        }
+        
         public static Packet CreateAction(int id, int posX, int posY, int dir, ActionType mode, long data)
         {
             var p = new Packet(64);

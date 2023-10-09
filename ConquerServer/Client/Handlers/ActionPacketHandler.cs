@@ -50,7 +50,9 @@ namespace ConquerServer.Client
                 foreach (var equipment in Equipment)
                 {
                     this.SendItemInfo(equipment, ItemInfoAction.AddItem);
-                    this.SendItemUse(ItemAction.Equip, equipment.Id, 0, (int)equipment.Position);
+
+                    using (ItemUsePacket iup = new ItemUsePacket(ItemAction.Equip, equipment.Id, (int)equipment.Position))
+                        Send(iup);
                 }
 
                 Equipment.Update(); // this will recalculate stats too
