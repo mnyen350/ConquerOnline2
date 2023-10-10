@@ -15,168 +15,159 @@ namespace ConquerServer.Client
         [Network(PacketType.Action)]
         private async Task ActionPacketHandler(Packet p)
         {
-            uint timestamp1 = p.ReadUInt32();       // 4    int (supposedly always set)
-            int uid = p.ReadInt32();                // 8    int
-            long data1 = p.ReadInt64();             // 12   long (short/short/int)
-            uint timestamp2 = p.ReadUInt32();       // 20   int (can be zero)
-            var mode = (ActionType)p.ReadInt16();   // 24   short
-            int dir = p.ReadInt16();                // 26   short
-            int data2 = p.ReadInt32();              // 28   int (short/short)
-            int data3 = p.ReadInt32();              // 32   int
-            int data4 = p.ReadInt32();              // 36   int
-            bool charging = p.ReadInt8() != 0;      // 40   byte (=1 when charging?)
-            string[] strings = p.ReadStrings();     // 41   string_list
-
-            if (mode == ActionType.Init_Map)
+            using (ActionPacket ap = new ActionPacket(p))
             {
-                using (var p1 = CreateAction(MapId, X, Y, 0, ActionType.Init_Map, MapId))
-                    Send(p1);
-
-                using (var p1 = CreateAction(MapId, X, Y, 0, ActionType.DisableDie, MapId))
-                    Send(p1);
-
-                // TO-DO: send guild info
-                // TO-DO: send hangup
-
-                FieldOfView.Move(this.MapId, this.X, this.Y); // update FOV
-            }
-            else if (mode == ActionType.Init_Items)
-            {
-                foreach (var item in Inventory)
+                if (ap.Action == ActionType.Init_Map)
                 {
-                    this.SendItemInfo(item, ItemInfoAction.AddItem);
-                }
+                    using (ActionPacket act = new ActionPacket(MapId, X, Y, 0, ActionType.Init_Map, MapId))
+                        Send(act);
 
-                foreach (var equipment in Equipment)
+                    using (ActionPacket act = new ActionPacket(MapId, X, Y, 0, ActionType.DisableDie, MapId))
+                        Send(act);
+
+                    // TO-DO: send guild info
+                    // TO-DO: send hangup
+
+                    FieldOfView.Move(this.MapId, this.X, this.Y); // update FOV
+                }
+                else if (ap.Action == ActionType.Init_Items)
                 {
-                    this.SendItemInfo(equipment, ItemInfoAction.AddItem);
+                    foreach (var item in Inventory)
+                    {
+                        this.SendItemInfo(item, ItemInfoAction.AddItem);
+                    }
 
-                    using (ItemUsePacket iup = new ItemUsePacket(ItemAction.Equip, equipment.Id, (int)equipment.Position))
-                        Send(iup);
+                    foreach (var equipment in Equipment)
+                    {
+                        this.SendItemInfo(equipment, ItemInfoAction.AddItem);
+
+                        using (ItemUsePacket iup = new ItemUsePacket(ItemAction.Equip, equipment.Id, (int)equipment.Position))
+                            Send(iup);
+                    }
+
+                    Equipment.Update(); // this will recalculate stats too
+                    Send(p);
                 }
-
-                Equipment.Update(); // this will recalculate stats too
-                Send(p);
-            }
-            else if (mode == ActionType.Init_Associates)
-            {
-                Send(p);
-            }
-            else if (mode == ActionType.Init_Proficiencies)
-            {
-                foreach (var prof in Proficiencies.Values)
-                    prof.Send();
-
-                Send(p);
-            }
-            else if (mode == ActionType.Init_Spells)
-            {
-                foreach (var magic in Magics.Values)
-                    magic.Send();
-
-                Send(p);
-            }
-            else if (mode == ActionType.Init_Guild) // last step of login seq
-            {
-                this._loginSequenceCompleted = true;
-
-                Send(p);
-            }
-            else if (mode == ActionType.Jump)
-            {
-                // x,y is contained within data1
-                int nx = (int)(data1 & 0xffff);
-                int ny = (int)((data1 >> 16) & 0xffff);
-
-                SanityHelper.Validate(() => this.Id == uid, "UID is not equal to the player");
-
-                // find the distance between (cx, cy) to (nx, ny) via two point formula -> MATHEHELPER.GETDISTANCE()
-                // if distance is greater than 18, it's an invalid jump (for now disconnect the player) ->  SANITYHELPER.VALIDATEJUMP()
-                SanityHelper.ValidateJump(X, Y, nx, ny);
-
-
-                //send jump packet to players in old range
-                FieldOfView.Send(p, true);     
-                /*
-                 * problem is that p1 is movcing out of p2's view
-                 * because fov updates and then sends JUMP, p2 never receive's JUMP
-                 * 
-                 * JUMP must get sent to both p1's fov (prior to moving)
-                 * and JUMP must get sent to any new player's added to p1's fov (after p1 has been spawned to p3)
-                 */
-
-                //update _screen
-                FieldOfView.Move(this.MapId, nx, ny);
-            }
-            else if (mode == ActionType.RequestEntity)
-            {
-                //data1 == id , pull player havinf that id
-                GameClient oClient;
-                if(World.TryGetPlayer((int)data1, out oClient) &&
-                    oClient.MapId == this.MapId)
+                else if (ap.Action == ActionType.Init_Associates)
                 {
-                    using (var spawn = CreateEntityPacket(oClient))
-                        this.Send(spawn);
+                    Send(p);
                 }
-                //purpose -> client: server recieved MISSING info
-                                    //"here is id of what info i need, spawn for me" - client
-            }
-            else if(mode== ActionType.EnterPortal)
-            {
-                /*
-                 * check player's location for +-5 of portal locations
-                 * 
-                 * check player's mapid == portal.FROMmapid
-                 *       player x == fromx +-5
-                 *       
-                 */
-                PortalModel? portal = Database.Portals.FirstOrDefault(p => p.Distance(this) <= 5);
-                if (portal == null)
+                else if (ap.Action == ActionType.Init_Proficiencies)
                 {
-                    Console.WriteLine("no portal found");
-                    return; 
+                    foreach (var prof in Proficiencies.Values)
+                        prof.Send();
+
+                    Send(p);
                 }
-
-                Console.WriteLine("portal found: ");
-                Console.WriteLine($"{portal.X}, {portal.Y}, {MapId} going to {portal.ToX}, {portal.ToY}, {portal.ToMapId}");
-
-                this.Teleport(portal.ToMapId, portal.ToX, portal.ToY);
-            }
-            else if(mode == ActionType.ChangePkMode)
-            {
-                Console.WriteLine(p.Dump("Unknown Action - " + mode));
-                
-                //data1 
-                PKMode pk = (PKMode)data1;
-                if (pk.IsDefined())
+                else if (ap.Action == ActionType.Init_Spells)
                 {
-                    this.PKMode = pk;
-                    this.Send(p);
+                    foreach (var magic in Magics.Values)
+                        magic.Send();
+
+                    Send(p);
                 }
-            }
-            else if(mode == ActionType.Revive)
-            {
-                if (!CanRevive || !IsDead) return;
-                
-                //remove ghostface from lookface
-                Lookface = Lookface.Normalize();
+                else if (ap.Action == ActionType.Init_Guild) // last step of login seq
+                {
+                    this._loginSequenceCompleted = true;
 
-                //remove "death" and "ghost" flags from status
-                Status -= StatusFlag.Ghost + StatusFlag.Death;
+                    Send(p);
+                }
+                else if (ap.Action == ActionType.Jump)
+                {
+                    // x,y is contained within data1
+                    int nx = (int)(ap.Data & 0xffff);
+                    int ny = (int)((ap.Data >> 16) & 0xffff);
 
-                //teleport player to the revive coordinates
-                RevivePointModel rpm = Database.GetRevivePoint();
-                this.Teleport(rpm.ReviveMapId, rpm.X, rpm.Y);
+                    SanityHelper.Validate(() => this.Id == ap.Id, "UID is not equal to the player");
 
-                //refill health
-                this.Health = this.MaxHealth;
+                    // find the distance between (cx, cy) to (nx, ny) via two point formula -> MATHEHELPER.GETDISTANCE()
+                    // if distance is greater than 18, it's an invalid jump (for now disconnect the player) ->  SANITYHELPER.VALIDATEJUMP()
+                    SanityHelper.ValidateJump(X, Y, nx, ny);
 
-                //syncronize the stats with client
-                this.SendSynchronize(true);
-            }
-            else
-            {
-                //Console.WriteLine(p.Dump("Unknown Action - " + mode));
+
+                    //send jump packet to players in old range
+                    FieldOfView.Send(p, true);
+                    /*
+                     * problem is that p1 is movcing out of p2's view
+                     * because fov updates and then sends JUMP, p2 never receive's JUMP
+                     * 
+                     * JUMP must get sent to both p1's fov (prior to moving)
+                     * and JUMP must get sent to any new player's added to p1's fov (after p1 has been spawned to p3)
+                     */
+
+                    //update _screen
+                    FieldOfView.Move(this.MapId, nx, ny);
+                }
+                else if (ap.Action == ActionType.RequestEntity)
+                {
+                    //data1 == id , pull player havinf that id
+                    GameClient oClient;
+                    if (World.TryGetPlayer((int)ap.Data, out oClient) &&
+                        oClient.MapId == this.MapId)
+                    {
+                        using (var spawn = CreateEntityPacket(oClient))
+                            this.Send(spawn);
+                    }
+                    //purpose -> client: server recieved MISSING info
+                    //"here is id of what info i need, spawn for me" - client
+                }
+                else if (ap.Action == ActionType.EnterPortal)
+                {
+                    /*
+                     * check player's location for +-5 of portal locations
+                     * 
+                     * check player's mapid == portal.FROMmapid
+                     *       player x == fromx +-5
+                     *       
+                     */
+                    PortalModel? portal = Database.Portals.FirstOrDefault(p => p.Distance(this) <= 5);
+                    if (portal == null)
+                    {
+                        Console.WriteLine("no portal found");
+                        return;
+                    }
+
+                    Console.WriteLine("portal found: ");
+                    Console.WriteLine($"{portal.X}, {portal.Y}, {MapId} going to {portal.ToX}, {portal.ToY}, {portal.ToMapId}");
+
+                    this.Teleport(portal.ToMapId, portal.ToX, portal.ToY);
+                }
+                else if (ap.Action == ActionType.ChangePkMode)
+                {
+                    Console.WriteLine(p.Dump("Unknown Action - " + ap.Action));
+
+                    //data1 
+                    PKMode pk = (PKMode)ap.Data;
+                    if (pk.IsDefined())
+                    {
+                        this.PKMode = pk;
+                        this.Send(p);
+                    }
+                }
+                else if (ap.Action == ActionType.Revive)
+                {
+                    if (!CanRevive || !IsDead) return;
+
+                    //remove ghostface from lookface
+                    Lookface = Lookface.Normalize();
+
+                    //remove "death" and "ghost" flags from status
+                    Status -= StatusFlag.Ghost + StatusFlag.Death;
+
+                    //teleport player to the revive coordinates
+                    RevivePointModel rpm = Database.GetRevivePoint();
+                    this.Teleport(rpm.ReviveMapId, rpm.X, rpm.Y);
+
+                    //refill health
+                    this.Health = this.MaxHealth;
+
+                    //syncronize the stats with client
+                    this.SendSynchronize(true);
+                }
+                else
+                {
+                    //Console.WriteLine(p.Dump("Unknown Action - " + mode));
+                }
             }
         }
     }

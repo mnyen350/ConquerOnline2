@@ -417,7 +417,7 @@ namespace ConquerServer.Network
 
         public int[] ReadInt32Array()
         {
-            var vals = ReadInt32Array(Offset, ReadInt8());
+            var vals = ReadInt32Array(Offset, ReadUInt8());
             Offset += vals.Length * 4;
             return vals;
         }
@@ -535,7 +535,7 @@ namespace ConquerServer.Network
 
         public short[] ReadInt16Array()
         {
-            var vals = ReadInt16Array(Offset, ReadInt8());
+            var vals = ReadInt16Array(Offset, ReadUInt8());
             Offset += vals.Length * 2;
             return vals;
         }
@@ -571,7 +571,7 @@ namespace ConquerServer.Network
             return (sbyte)val;
         }
 
-        public byte ReadInt8()
+        public byte ReadUInt8()
         {
             var val = ReadInt8(Offset);
             Offset += 1;
@@ -664,7 +664,7 @@ namespace ConquerServer.Network
 
         public string[] ReadStrings()
         {
-            var count = ReadInt8();
+            var count = ReadUInt8();
             var strings = new string[count];
             for (int i = 0; i < count; i++)
                 strings[i] = ReadString();
@@ -754,7 +754,7 @@ namespace ConquerServer.Network
 
         public byte[] ReadBytes()
         {
-            return ReadBytes(ReadInt8());
+            return ReadBytes(ReadUInt8());
         }
 
         public byte[] ReadBytes(int length)

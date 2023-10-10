@@ -357,8 +357,8 @@ namespace ConquerServer.Client
 
         public void Teleport(int mapId, int x, int y)
         {
-            using (var p = CreateAction(Id, x, y, 0, ActionType.Teleport, mapId))
-                FieldOfView.Send(p, true);
+            using (ActionPacket action = new ActionPacket(Id, x, y, 0, ActionType.Teleport, mapId))
+                FieldOfView.Send(action, true);
             FieldOfView.Clear();
             FieldOfView.Move(mapId, x, y);
         }
@@ -544,26 +544,7 @@ namespace ConquerServer.Client
             //}
         }
         
-        public static Packet CreateAction(int id, int posX, int posY, int dir, ActionType mode, long data)
-        {
-            var p = new Packet(64);
-
-            p.WriteUInt32(TimeStamp.GetTime()); // 4
-            p.WriteInt32(id);                   // 8
-            p.WriteInt64(data);                 // 12
-            p.WriteUInt32(TimeStamp.GetTime()); // 20
-            p.WriteInt16((short)mode);          // 24
-            p.WriteInt16((short)dir);           // 26
-            p.WriteInt16((short)posX);          // 28
-            p.WriteInt16((short)posY);          // 30
-            p.Fill(sizeof(int));                // 32
-            p.Fill(sizeof(int));                // 36
-            p.Fill(sizeof(byte));               // 40
-            p.Fill(sizeof(byte));               // 41
-            p.Build(PacketType.Action);
-
-            return p;
-        }
+        
         public static Packet CreateEntityPacket(GameClient e)
         {
             var msg = new Packet(PacketBufferSize.SizeOf512);
@@ -613,34 +594,6 @@ namespace ConquerServer.Client
                 msg.WriteInt32(0);
                 msg.WriteInt32(0);
             }
-
-            ///*if (e.Lookface.Mesh <= 4)
-            //{
-            //    msg.WriteInt32(e.HelmetTypeId);
-            //    msg.WriteInt32(e.OvercoatTypeId);
-            //    msg.WriteInt32(e.ArmorTypeId);
-            //}
-            //else*/
-            //{
-            //    msg.WriteInt32(0);
-            //    msg.WriteInt32(0);
-            //    msg.WriteInt32(0);
-            //}
-            //msg.WriteInt32(0);// e.WeaponLeftTypeId);
-            //msg.WriteInt32(0); // e.WeaponRightTypeId);
-            //msg.WriteInt32(0); // e.WeaponLeftCoatTypeId);
-            //msg.WriteInt32(0); // e.WeaponRightCoatTypeId);
-            ///*if (e.Lookface.Mesh <= 4)
-            //{
-            //    msg.WriteInt32(e.MountTypeId);
-            //    msg.WriteInt32(e.MountDecoratorTypeId);
-            //}
-            //else*/
-            //{
-            //    msg.WriteInt32(0);
-            //    msg.WriteInt32(0);
-            //}
-
 
             msg.WriteInt16(0); // unknown
             msg.WriteInt16(0); // unknown
@@ -749,7 +702,7 @@ namespace ConquerServer.Client
         }
         public static Packet CreateDespawnPacket(GameClient e)
         {
-            return CreateAction(e.Id, 0, 0, 0, ActionType.RemoveEntity, 0);
+            return new ActionPacket(e.Id, 0, 0, 0, ActionType.RemoveEntity, 0);
         }
 
         #endregion
