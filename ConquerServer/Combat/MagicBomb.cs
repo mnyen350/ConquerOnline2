@@ -11,7 +11,7 @@ namespace ConquerServer.Combat
 {
     public partial class Battle
     {
-        [Magic(MagicSort.Bomb)]
+        [Magic(MagicSort.Bomb, MagicSort.BombGroundTarget)]
         private void MagicBomb()
         {
             // determine x,y of center of "bomb"

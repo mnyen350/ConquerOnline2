@@ -1,6 +1,7 @@
 ﻿using ConquerServer.Database;
 using ConquerServer.Database.Models;
 using ConquerServer.Network;
+using ConquerServer.Shared;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,111 +10,6 @@ using System.Threading.Tasks;
 
 namespace ConquerServer.Client
 {
-    public enum ItemSort
-    {
-        Invalid = -1,
-        Expendable = 0,
-        Helmet = 1,
-        Necklace = 2,
-        Armor = 3,
-        Weapon1 = 4,
-        Weapon2 = 5,
-        Shield = 6,
-        RingR = 7,
-        Shoes = 8,
-        Other = 9,
-        RingL = 10,
-        Overcoat = 11,
-        DamageArtifact = 12,
-        Unknown13 = 13,
-        Mount = 14,
-        Weapon1Coat = 15,
-        Weapon2Coat = 16,
-        BowCoat = 17,
-        ShieldCoat = 18,
-        MountDecorator = 20,
-        HorseWhip = 21
-    }
-
-    public enum ItemType
-    {
-        Invalid = -1,
-
-        // DamageArtifact
-        IncreaseDmgArtifact = 1,
-
-        DecreaseDmgArtifact = 2,
-
-        // Weapon1
-        Blade = 10000,
-
-        Sword = 20000,
-        Backsword = 21000,
-        Hook = 30000,
-        Whip = 40000,
-        Axe = 50000,
-        Hammer = 60000,
-        Club = 80000,
-        Scepter = 81000,
-        Dagger = 90000,
-
-        // Weapon1 (two)
-        NinjaSword = 01000,
-
-        PrayerBeads = 10000,
-        Rapier = 11000,
-        Pistol = 12000,
-        AssassinKnife = 13000,
-
-        // Weapon2
-
-        Glaive = 10000,
-        Scythe = 11000,
-        Poleaxe = 30000,
-        Longhammer = 40000,
-        Spear = 60000,
-        Wand = 61000,
-        Pickaxe = 62000,
-        Halbert = 80000,
-
-        // Other
-        Gem = 00000,
-
-        TaskItem = 10000,
-        ActionItem = 20000,
-        ComposeItem = 30000,
-        MonsterItem = 50000,
-        PointCard = 80000,
-        DarkHorn = 90000,
-
-        // Expendable
-        Physic = 00000,
-
-        PhysicMana = 01000,
-        PhysicLife = 02000,
-        Spell = 60000,
-        Ore = 70000,
-        Special = 80000,
-        Silver = 90000,
-
-        // MountAndAccessory
-        Mount = 00000,
-
-        Weapon2Coat = 50000,
-        Weapon1Coat = 60000,
-        BowCoat = 70000,
-        ShieldCoat = 80000,
-
-        /// -----
-
-
-        // 2h
-        Bow = 323,
-
-        // Expendable
-        Arrow = 50000,
-    }
-
     public class Item
     {
         public static ItemType GetSubType(int typeId)
@@ -122,7 +18,7 @@ namespace ConquerServer.Client
             {
                 case ItemSort.Weapon1:
                 case ItemSort.Weapon2:
-                    return (ItemType)(typeId % 100000 / 1000 * 1000);
+                    return (ItemType)(typeId / 10000 * 10);
 
                 case ItemSort.Other:
                 case ItemSort.RingL:

@@ -6,6 +6,7 @@ using ConquerServer.Shared;
 using System;
 using System.Buffers;
 using System.Collections.Generic;
+using System.Diagnostics.Tracing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -52,8 +53,12 @@ namespace ConquerServer.Combat
 
         private async Task StartMelee()
         {
-            FilterTargets();
-            ProcessTargets();
+            // determine first, should a passive skill activate instead?
+            if (!await ActivatePassiveSkill())
+            {
+                FilterTargets();
+                ProcessTargets();
+            }
         }
 
         private async Task StartMagic()
@@ -71,19 +76,57 @@ namespace ConquerServer.Combat
             var findTargets = c_Magic[Spell.Sort];
             if (findTargets == null)
             {
-                Source.SendSystemMessage("Spell requested failed, magic type not handled");
+                Source.SendSystemMessage($"Spell {Spell.Type} requested failed, magic sort {Spell.Sort} not handled");
                 return;
             }
 
+            if (Source.NextMagic > DateTime.Now)
+                return; //do nothing when its not time to cast magic again
+
             await Task.Delay(Spell.DelayCast);
-            
+            Source.NextMagic = DateTime.Now.AddMilliseconds(Spell.DelayNextMagic);
+
+
             // find elligible targets to be hit
             findTargets(this);
             // filter these targets
-            FilterTargets();
+            FilterTargets();    
             // process doing the damage now to them
 
             ProcessTargets();
+        }
+
+        private IEnumerable<MagicTypeModel> GetPassiveMagic()
+        {
+            // get what's in the hand
+            var w1 = Source.Equipment[ItemPosition.Set1Weapon1]?.SubType;
+            var w2 = Source.Equipment[ItemPosition.Set1Weapon2]?.SubType;
+
+            // then filter by WeaponSubType
+
+            return Source.Magics.Values
+                .Select(m => m.Attributes)
+                .Where(m => m.IsWeaponPassive)
+                .Where(m => m.WeaponSubType == w1 || m.WeaponSubType == w2);
+        }
+
+        private async Task<bool> ActivatePassiveSkill()
+        {
+            // get available passive magic
+            foreach (var passive in GetPassiveMagic())
+            {
+                //rng a number 
+                int rng = Utility.Random.Next(0, 100);
+
+                //if <= then skill suceeded
+                if (rng <= passive.Accuracy)
+                {
+                    Spell = passive;
+                    await StartMagic();
+                    return true;
+                }           
+            }
+            return false;
         }
 
         private bool IsPotentialTarget(GameClient target)

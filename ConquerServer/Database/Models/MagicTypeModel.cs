@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ConquerServer.Shared;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -91,7 +92,7 @@ namespace ConquerServer.Database.Models
         /// /// ///////////////
         public int Unknown7 { get; set; }
         public int Unknown8 { get; set; }
-        public int WeaponSubType { get; set; }
+        public ItemType WeaponSubType { get; set; }
         public int Unknown9 { get; set; }
         public int Unknown10 { get; set; }
         /// /// ///////////////
@@ -99,9 +100,9 @@ namespace ConquerServer.Database.Models
         public int Unknown12 { get; set; }
         public int Unknown13 { get; set; }
         public int Unknown14 { get; set; }
-        public int UseEP { get; set; }
+        public int UseStamina { get; set; }
         /// /// ///////////////
-        public int WeaponHit { get; set; }
+        public bool IsWeaponPassive { get; set; }
         public int UseItem { get; set; }
         public int NextMagic { get; set; }
         public int DelayMS { get; set; }
@@ -122,7 +123,7 @@ namespace ConquerServer.Database.Models
         public int Unknown26 { get; set; }
         public int Unknown27 { get; set; }
         public int Unknown28 { get; set; }
-        public int Unknown29 { get; set; }
+        public int DelayNextMagic { get; set; }
 
         public MagicTypeModel()
         {
@@ -159,7 +160,7 @@ namespace ConquerServer.Database.Models
 
             model.Unknown7 = int.Parse(split[20]);
             model.Unknown8 = int.Parse(split[21]);
-            model.WeaponSubType = int.Parse(split[22]);
+            model.WeaponSubType = (ItemType)int.Parse(split[22]);
             model.Unknown9 = int.Parse(split[23]);
             model.Unknown10 = int.Parse(split[24]);
 
@@ -167,9 +168,9 @@ namespace ConquerServer.Database.Models
             model.Unknown12 = int.Parse(split[26]);
             model.Unknown13 = int.Parse(split[27]);
             model.Unknown14 = int.Parse(split[28]);
-            model.UseEP = int.Parse(split[29]);
+            model.UseStamina = int.Parse(split[29]);
 
-            model.WeaponHit = int.Parse(split[30]);
+            model.IsWeaponPassive = int.Parse(split[30]) != 0;
             model.UseItem = int.Parse(split[31]);
             model.NextMagic = int.Parse(split[32]);
             model.DelayMS = int.Parse(split[33]);
@@ -190,7 +191,7 @@ namespace ConquerServer.Database.Models
             model.Unknown26 = int.Parse(split[45]);
             model.Unknown27 = int.Parse(split[46]);
             model.Unknown28 = int.Parse(split[47]);
-            model.Unknown29 = int.Parse(split[48]);
+            model.DelayNextMagic = int.Parse(split[48]);
 
             return model;
         }

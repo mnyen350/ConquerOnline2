@@ -94,6 +94,7 @@ namespace ConquerServer.Client
         }
         public PKMode PKMode { get; private set; }
         public bool CanRevive { get; set; }
+        public DateTime NextMagic { get; set; }
 
 #warning, need a hostility/name flashing/name red whatever PKPOINTS 
 
@@ -113,6 +114,8 @@ namespace ConquerServer.Client
             Proficiencies = new Dictionary<int, Proficiency>();
             Status = StatusFlag.None;
             _sync = new Dictionary<SynchronizeType, long>();
+            //change later
+            NextMagic = DateTime.MinValue;
         }
 
         public async Task<bool> DispatchNetwork(Packet msg)
