@@ -148,21 +148,12 @@ namespace ConquerServer.Client
                 {
                     if (!CanRevive || !IsDead) return;
 
-                    //remove ghostface from lookface
-                    Lookface = Lookface.Normalize();
-
-                    //remove "death" and "ghost" flags from status
-                    Status -= StatusFlag.Ghost + StatusFlag.Death;
+                    // detach death
+                    this.Status[StatusType.Death].Detach();
 
                     //teleport player to the revive coordinates
                     RevivePointModel rpm = Database.GetRevivePoint();
                     this.Teleport(rpm.ReviveMapId, rpm.X, rpm.Y);
-
-                    //refill health
-                    this.Health = this.MaxHealth;
-
-                    //syncronize the stats with client
-                    this.SendSynchronize(true);
                 }
                 else
                 {

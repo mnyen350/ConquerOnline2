@@ -26,7 +26,7 @@ namespace ConquerServer.Database
         private static string _serverHost;
         private static List<PortalModel> _portals;
         private static Dictionary<int, ItemTypeModel> _itemTypes;
-        private static Dictionary<int, MagicTypeModel> _magicTypes;
+        public static Dictionary<int, MagicTypeModel> _magicTypes;
         private static Dictionary<int, RevivePointModel> _revivePoints;
         private static DbCore _core;
 
@@ -403,7 +403,7 @@ namespace ConquerServer.Database
             int spi = statFile.ReadInt32(slevel, "Spirit", 0);
 
             //when unable to pull, values = 0 by default
-            StatModel stats = new StatModel(str, vit, agi, spi);
+            StatModel stats = new StatModel(str, agi, vit, spi);
 
             return stats;
         }

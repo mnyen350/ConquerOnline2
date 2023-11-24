@@ -55,5 +55,15 @@ namespace ConquerServer.Shared
                 return int.MaxValue;
             return MathHelper.GetDistance(l1.X, l2.Y, l2.X, l2.Y);
         }
+
+        public static int GetAngle(this ILocation l1, int x, int y)
+        {
+            // https://stackoverflow.com/questions/12891516/math-calculation-to-retrieve-angle-between-two-points
+            double xDiff = x - l1.X;
+            double yDiff = y - l1.Y;
+            return (int)(Math.Atan2(yDiff, xDiff) * 180.0 / Math.PI);
+        }
+
+        public static int GetAngle(this ILocation l1, ILocation l2) => GetAngle(l1, l2.X, l2.Y);
     }
 }

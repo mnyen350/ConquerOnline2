@@ -37,7 +37,8 @@ namespace ConquerServer.Client
         public string Username { get; private set; }
         public string Server { get; private set; }
         public int Id { get; set; }
-        public StatusFlag Status { get; set; }
+        public StatusManager Status { get; set; }
+        public StatusFlag StatusFlag { get; set; }
         public Lookface Lookface { get; set; }
         public short HairStyle { get; set; }
         public int Gold { get; set; }
@@ -49,9 +50,28 @@ namespace ConquerServer.Client
         public int Spirit { get; set; }
         public int AttributePoints { get; set; }
         public bool IsDead {  get { return (Health <= 0); } }
-        public int Health { get; set; }
+        private int _health;
+        public int Health { get 
+            { 
+                return _health; 
+            }
+            set 
+            {
+                _health = Math.Max(Math.Min(MaxHealth, value), 0);
+            } 
+        }
         public int MaxHealth { get; set; }
-        public int Mana { get; set; }
+        private int _mana;
+        public int Mana { 
+            get 
+            {
+                return _mana;
+            } 
+            set 
+            {
+                _mana = Math.Max(Math.Min(MaxMana, value),0);
+            } 
+        }
         public int MaxMana { get; set; }
         public int Stamina { get; set; }
         public int PKPoints { get; set; }
@@ -112,10 +132,12 @@ namespace ConquerServer.Client
             Equipment = new Equipment(this);
             Magics = new Dictionary<int, Magic>();
             Proficiencies = new Dictionary<int, Proficiency>();
-            Status = StatusFlag.None;
+            Status = new StatusManager(this);
+            StatusFlag = StatusFlag.None;
             _sync = new Dictionary<SynchronizeType, long>();
             //change later
             NextMagic = DateTime.MinValue;
+
         }
 
         public async Task<bool> DispatchNetwork(Packet msg)
@@ -148,7 +170,7 @@ namespace ConquerServer.Client
 
         public void Send(Packet msg)
         {
-            Console.WriteLine(msg.Dump("Sending"));
+            //Console.WriteLine(msg.Dump("Sending"));
             Socket.Send(msg);
         }
 
@@ -270,8 +292,7 @@ namespace ConquerServer.Client
 
 
             AttributePoints = lChar.AttributePoints;
-            Health = lChar.Health;
-            Mana = lChar.Mana;
+            //health and mana moved
             PKPoints = lChar.PKPoints;
             Level = lChar.Level;
 
@@ -335,6 +356,11 @@ namespace ConquerServer.Client
             }
 
             RecalculateStats();
+
+            //health and mana loaded after recalculate to allow maxhealth and maxmana be nonzero
+            Health = lChar.Health;
+            Mana = lChar.Mana;
+
             World.AddPlayer();
 
             this._loginSequenceCompleted = false;
@@ -415,7 +441,7 @@ namespace ConquerServer.Client
                                   .Begin(this.Id))
             {
                 // always sync the status flag
-                p.Synchronize(SynchronizeType.Flags, this.Status.Bits);
+                p.Synchronize(SynchronizeType.Flags, this.StatusFlag.Bits);
 
                 // sync any differences
                 foreach (var kvp in diff)

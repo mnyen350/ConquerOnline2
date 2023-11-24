@@ -28,6 +28,14 @@ namespace ConquerServer.Combat
         public int CastX { get; private set; } //coordinate clicked to cast skill
         public int CastY { get; private set; }
 
+        public bool IsOffensive
+        {
+            get
+            {
+                return (Spell == null || Spell.IsOffensive);
+            }
+        }
+
         public Battle(GameClient source, GameClient target, int castX=0, int castY=0, MagicTypeModel? spell = null)
         {
             Source = source;
@@ -58,6 +66,7 @@ namespace ConquerServer.Combat
             {
                 FilterTargets();
                 ProcessTargets();
+                SynchronizeAll();
             }
         }
 
@@ -66,6 +75,14 @@ namespace ConquerServer.Combat
             if (Spell == null)
                 return;
 
+            // Check Pre-requisites
+            if (!ConsumePreRequisites())
+            {
+                Console.WriteLine("Failed pre-requisites");
+                return;
+
+            }
+            // Find targets
             if (CastX == 0 && CastY == 0 && Targets.Count > 0)
             {
                 var firstTarget = Targets.First();
@@ -80,21 +97,57 @@ namespace ConquerServer.Combat
                 return;
             }
 
-            if (Source.NextMagic > DateTime.Now)
-                return; //do nothing when its not time to cast magic again
-
+            // Delay skill cast
             await Task.Delay(Spell.DelayCast);
-            Source.NextMagic = DateTime.Now.AddMilliseconds(Spell.DelayNextMagic);
-
 
             // find elligible targets to be hit
+            Console.WriteLine("Find targets");
             findTargets(this);
             // filter these targets
-            FilterTargets();    
+            Console.WriteLine("Filter targets: {0}", Targets.Count);
+            FilterTargets();
             // process doing the damage now to them
-
+            Console.WriteLine("Process targets: {0}", Targets.Count);
             ProcessTargets();
+            // sync
+            SynchronizeAll();
         }
+
+        private bool ConsumePreRequisites()
+        {
+            if (!Spell.IsWeaponPassive)
+            {
+                // Set skill CD
+                if (Source.NextMagic > DateTime.UtcNow)
+                    return false;
+            }
+
+            // stamina
+            //
+            if (Source.Stamina < Spell.UseStamina)
+                return false;
+      
+            // mana
+            //
+            if(Source.Mana < Spell.UseMana)
+                return false;
+
+            // arrows
+            //
+
+            //weapon subtype?
+
+            // if all pre-reqs passed, update everything
+            // no CD for passive skills
+            if (!Spell.IsWeaponPassive)
+                Source.NextMagic = DateTime.UtcNow.AddMilliseconds(Spell.DelayNextMagic);
+            
+            Source.Stamina -= Spell.UseStamina;
+            Source.Mana -= Spell.UseMana;
+
+            return true;
+        }
+
 
         private IEnumerable<MagicTypeModel> GetPassiveMagic()
         {
@@ -131,38 +184,45 @@ namespace ConquerServer.Combat
 
         private bool IsPotentialTarget(GameClient target)
         {
-            if (target.Id == Source.Id) return false; // cannot hit yourself
+            // detachstatus does not require target to be alive
+            if (Spell == null || Spell.Sort != MagicSort.DetachStatus)
+            {
+                if (target.Health <= 0) return false;
+            }
 
-            if (target.Health <= 0) return false; // cannot hit dead
+            if (IsOffensive)
+            {
+                if (target.Id == Source.Id) return false; // cannot hit yourself
 
-            if (Source.PKMode == PKMode.Peace) 
-            {
-                return false; //hitting no one
+                if (Source.PKMode == PKMode.Peace)
+                {
+                    return false; //hitting no one
+                }
+                else if (Source.PKMode == PKMode.Capture)
+                {
+                    //TO-DO: implement nameflashing(datetime??), black name(PK POINT SYSTEM)
+                    return false;
+                }
+                else if (Source.PKMode == PKMode.Revenge)
+                {
+                    //TO-DO: implement revenge list, auto add ppl who just killed you.. only hit those ppl
+                    return false;
+                }
+                else if (Source.PKMode == PKMode.Team)
+                {
+                    //TO-DO: implrement Team like literally the team of 4 u are in RN
+                    return false;
+                }
+                else if (Source.PKMode == PKMode.Guild)
+                {
+                    //TO-DO: everyone EXCEPT, guild, team, guild's allies
+                    return false;
+                }
+                /*else if(Source.PKMode == PKMode.Kill)
+                {
+                    return true;
+                }*/
             }
-            else if(Source.PKMode == PKMode.Capture)
-            {
-                //TO-DO: implement nameflashing(datetime??), black name(PK POINT SYSTEM)
-                return false;
-            }
-            else if(Source.PKMode == PKMode.Revenge)
-            {
-                //TO-DO: implement revenge list, auto add ppl who just killed you.. only hit those ppl
-                return false;
-            }
-            else if(Source.PKMode == PKMode.Team)
-            {
-                //TO-DO: implrement Team like literally the team of 4 u are in RN
-                return false;
-            }
-            else if(Source.PKMode == PKMode.Guild)
-            {
-                //TO-DO: everyone EXCEPT, guild, team, guild's allies
-                return false;
-            }
-            /*else if(Source.PKMode == PKMode.Kill)
-            {
-                return true;
-            }*/
 
             return true; // is potential target
         }
@@ -172,27 +232,27 @@ namespace ConquerServer.Combat
             Targets.RemoveWhere(t => !IsPotentialTarget(t));
         }
 
-        private void BroadcastDeath(GameClient target)
-        {
-            int data0 = MathHelper.BitFold32(Spell != null ? 3 : 1, 0);
-            using (InteractPacket ip = new InteractPacket(Source.Id, target.Id, target.X ,target.Y, InteractAction.Kill, data0, 0,0,0))
-                target.FieldOfView.Send(ip, true);
-           
-        }
-
         private bool IsDodgeDamage()
         {
-            if (Source.Equipment[ItemPosition.Set1Weapon1]?.SubType == ItemType.Bow && 
-                Source.Equipment[ItemPosition.Set1Weapon2]?.SubType == ItemType.Arrow)
+            if (Spell != null)
             {
-                return true;
+                if (Spell.WeaponSubType == ItemType.Bow)
+                    return true;
             }
+            else
+            {
+                var w1 = Source.Equipment[ItemPosition.Set1Weapon1]?.SubType;
+                var w2 = Source.Equipment[ItemPosition.Set1Weapon2]?.SubType;
+                if (w1 == ItemType.Bow && w2 == ItemType.Arrow)
+                    return true;
+            }
+
             return false;
         }
 
         private DamageAlgorithm GetDamageAlgorithm(GameClient target)
         {
-            if (Spell != null && Spell.UseMP > 0)
+            if (Spell != null && Spell.UseMana > 0)
             {
                 return new MagicAlgorithm(Source, target, Spell);
             }
@@ -209,14 +269,39 @@ namespace ConquerServer.Combat
         private void ProcessTargets()
         {
          
-            var damage = new Dictionary<int, (int, bool)>();
+            var power = new Dictionary<int, (int, bool)>();
 
             foreach (var target in Targets)
             {
-                var algorithm = GetDamageAlgorithm(target);
-                var hit = algorithm.Calculate();
-                target.Health -= hit;
-                damage.Add(target.Id, (hit, false));
+                if (IsOffensive)
+                {
+                    var algorithm = GetDamageAlgorithm(target);
+                    var hit = algorithm.Calculate();
+                    target.Health -= hit;
+                    power.Add(target.Id, (hit, false));
+                }
+                else
+                {
+                    if(Spell?.Sort == MagicSort.AddMana)
+                    {
+                        target.Mana += Spell.Power;
+                        power.Add(target.Id, (Spell.Power, false));
+                    }
+                    else if(Spell?.Sort == MagicSort.Recruit)
+                    {
+                        target.Health += Spell.Power;
+                        power.Add(target.Id, (Spell.Power, false));
+                    }
+                    else if(Spell?.Sort == MagicSort.AttachStatus)
+                    {
+                        target.Status.Attach(Spell.StatusType,Spell.Power, TimeSpan.FromSeconds(Spell.StepSecond));
+                    }
+                    else if(Spell?.Sort == MagicSort.DetachStatus)
+                    {
+                        target.Status.Detach(Spell.StatusType);
+                    }
+                }
+
             }
 
             if (Spell != null)
@@ -225,7 +310,7 @@ namespace ConquerServer.Combat
                 using (var p = new MagicEffectPacket()
                                 .Begin(Source.Id, CastX, CastY, Spell.Type, Spell.Level, 0))
                 {
-                    foreach (var kvp in damage)
+                    foreach (var kvp in power)
                         p.Add(kvp.Key, kvp.Value.Item1, kvp.Value.Item2 ? 0 : 1, 0);
                     
                     Source.FieldOfView.Send(p.End(), true);
@@ -234,41 +319,24 @@ namespace ConquerServer.Combat
             else
             {
                 // TO-DO: archer damage
-                foreach (var kvp in damage)
+                foreach (var kvp in power)
                 {
                     var action = InteractAction.Attack;
                     using (InteractPacket ip = new InteractPacket(Source.Id, kvp.Key, Source.X, Source.Y, action, kvp.Value.Item1, 0, 0, 0))
                         Source.FieldOfView.Send(ip, true);
                 }
             }
+        }
 
+        private void SynchronizeAll()
+        {
             // sync all entites involved including Source
             foreach (var entity in Targets.Concat(new[] { Source }))
             {
                 if (entity.IsDead)
                 {
-                    // add the death status flag
-                    entity.Status += StatusFlag.Death;
-
-                    // issue the death broadcast, and change to ghost
-                    Utility.Delay(TimeSpan.FromSeconds(0.15), async () =>
-                    {
-                        if (!entity.IsDead) return; // revaldiate our assumption
-                        BroadcastDeath(entity);
-
-                        await Task.Delay(TimeSpan.FromSeconds(1.5));
-
-                        if (!entity.IsDead) return; // revaldiate our assumption
-                        entity.Status += StatusFlag.Ghost;
-                        entity.Lookface = entity.Lookface.ToGhost();
-                        entity.SendSynchronize(true);
-                        Console.WriteLine($"{entity.Name} {entity.Lookface.ToUInt32()}");
-
-                        await Task.Delay(TimeSpan.FromSeconds(16.5));
-
-                        if (!entity.IsDead) return;
-                        entity.CanRevive = true;
-                    });
+                    // add the death status
+                    entity.Status.AttachDeath(Source);
                 }
 
                 entity.SendSynchronize(true);

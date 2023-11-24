@@ -33,13 +33,13 @@ namespace ConquerServer.Combat
                 damage *= 1.5;
 
             // reduce based on target's Magic Defense (it's a %)
-            damage *= (1.00 - (Target.MagicDefense * 0.01));
+            damage *= 1.00 - Target.MagicDefense * 0.01;
 
             //Decrease damage with Bless percentage(From Items)
-            damage *= (1.00 - GetTargetBlessTotal());
+            damage *= 1.00 - GetTargetBlessTotal();
 
             //Decrease damage with Tortoise percentage(From Gems)
-            damage *= (1.00 - GetTargetTortoiseGemPercent());
+            damage *= 1.00 - GetTargetTortoiseGemPercent();
 
             //Damage + Fan Final Damage
             damage += GetFanFinalMagic();

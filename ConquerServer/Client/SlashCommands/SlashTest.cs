@@ -14,6 +14,7 @@ namespace ConquerServer.Client
         private void SlashTest(string[] messageContents) 
         {
             this.Stamina = 100;
+            this.Mana = this.MaxMana;
             this.SendSynchronize(false);            
         }
     }

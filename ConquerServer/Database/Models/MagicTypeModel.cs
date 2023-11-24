@@ -7,7 +7,15 @@ using System.Threading.Tasks;
 
 namespace ConquerServer.Database.Models
 {
-    public enum MagicTargetType : int
+    public enum MagicPassiveType
+    {
+        Weapon = 4,
+        Unknown8 = 8, // use by pirate? 
+        Unknown12 = 12, // use by assasin?
+        Unknown30 = 30, // wtf?
+    }
+
+    public enum MagicTargetType
     {
         Ghost = 64,
         Passive = 8,
@@ -49,6 +57,7 @@ namespace ConquerServer.Database.Models
         AttachShurikenVortex = 28,
         Mount = 32,
         GibbonAttack = 34,
+        StarArrow = 38,
         MoveThickLine = 40,
         TargetedLine = 48,
         AuraToggle = 51,
@@ -59,6 +68,8 @@ namespace ConquerServer.Database.Models
 
         // custom
         UtilityShot = 100
+
+
     }
 
     public class MagicTypeModel
@@ -70,13 +81,13 @@ namespace ConquerServer.Database.Models
         public int Type { get; set; }
         public MagicSort Sort { get; set; }
         public string Name { get; set; }
-        public int Offensive { get; set; }
+        public bool IsOffensive { get; set; }
         /// ///////////////
         public int Ground { get; set; }
         public int Unknown1 { get; set; }
         public MagicTargetType Target { get; set; } //make type the enum?
         public int Level { get; set; }
-        public int UseMP { get; set; }
+        public int UseMana { get; set; }
         /// /// ///////////////
         public int Power { get; set; }
         public int DelayCast { get; set; }
@@ -85,7 +96,7 @@ namespace ConquerServer.Database.Models
         public int Range { get; set; }
         /// /// ///////////////
         public int Distance { get; set; }
-        public int Unknown3 { get; set; }
+        public StatusType StatusType { get; set; }
         public int Unknown4 { get; set; }
         public int Unknown5 { get; set; }
         public int Unknown6 { get; set; }
@@ -93,8 +104,9 @@ namespace ConquerServer.Database.Models
         public int Unknown7 { get; set; }
         public int Unknown8 { get; set; }
         public ItemType WeaponSubType { get; set; }
-        public int Unknown9 { get; set; }
-        public int Unknown10 { get; set; }
+        public int ActiveTimes { get; set; }
+        public MagicPassiveType PassiveType { get; set; }
+        public bool IsWeaponPassive => (PassiveType == MagicPassiveType.Weapon);
         /// /// ///////////////
         public int Unknown11 { get; set; }
         public int Unknown12 { get; set; }
@@ -102,12 +114,12 @@ namespace ConquerServer.Database.Models
         public int Unknown14 { get; set; }
         public int UseStamina { get; set; }
         /// /// ///////////////
-        public bool IsWeaponPassive { get; set; }
+        public int Unknown15 { get; set; }
         public int UseItem { get; set; }
         public int NextMagic { get; set; }
-        public int DelayMS { get; set; }
+        public int NextMagicDelay { get; set; }
         /// ///////////////
-        public int Unknown15 { get; set; }
+        public int Unknown10 { get; set; }
         public int Unknown16 { get; set; }
         public int Unknown17 { get; set; }
         public int Unknown18 { get; set; }
@@ -138,13 +150,13 @@ namespace ConquerServer.Database.Models
             model.Type = int.Parse(split[1]);
             model.Sort = (MagicSort)int.Parse(split[2]);
             model.Name = split[3];
-            model.Offensive = int.Parse(split[4]);
+            model.IsOffensive = (int.Parse(split[4]) != 0);
 
             model.Ground = int.Parse(split[5]);
             model.Unknown1 = int.Parse(split[6]);
             model.Target = (MagicTargetType)int.Parse(split[7]);
             model.Level = int.Parse(split[8]);
-            model.UseMP = int.Parse(split[9]);
+            model.UseMana = int.Parse(split[9]);
 
             model.Power = int.Parse(split[10]);
             model.DelayCast = int.Parse(split[11]);
@@ -153,7 +165,7 @@ namespace ConquerServer.Database.Models
             model.Range = int.Parse(split[14]);
 
             model.Distance = int.Parse(split[15]);
-            model.Unknown3 = int.Parse(split[16]);
+            model.StatusType = (StatusType)int.Parse(split[16]);
             model.Unknown4 = int.Parse(split[17]);
             model.Unknown5 = int.Parse(split[18]);
             model.Unknown6 = int.Parse(split[19]);
@@ -161,8 +173,8 @@ namespace ConquerServer.Database.Models
             model.Unknown7 = int.Parse(split[20]);
             model.Unknown8 = int.Parse(split[21]);
             model.WeaponSubType = (ItemType)int.Parse(split[22]);
-            model.Unknown9 = int.Parse(split[23]);
-            model.Unknown10 = int.Parse(split[24]);
+            model.ActiveTimes = int.Parse(split[23]);
+            model.PassiveType = (MagicPassiveType)int.Parse(split[24]);
 
             model.Unknown11 = int.Parse(split[25]);
             model.Unknown12 = int.Parse(split[26]);
@@ -170,12 +182,12 @@ namespace ConquerServer.Database.Models
             model.Unknown14 = int.Parse(split[28]);
             model.UseStamina = int.Parse(split[29]);
 
-            model.IsWeaponPassive = int.Parse(split[30]) != 0;
+            model.Unknown15 = int.Parse(split[30]);
             model.UseItem = int.Parse(split[31]);
             model.NextMagic = int.Parse(split[32]);
-            model.DelayMS = int.Parse(split[33]);
+            model.NextMagicDelay = int.Parse(split[33]);
 
-            model.Unknown15 = int.Parse(split[34]);
+            model.Unknown10 = int.Parse(split[34]);
             model.Unknown16 = int.Parse(split[35]);
             model.Unknown17 = int.Parse(split[36]);
             model.Unknown18 = int.Parse(split[37]);
@@ -194,6 +206,11 @@ namespace ConquerServer.Database.Models
             model.DelayNextMagic = int.Parse(split[48]);
 
             return model;
+        }
+
+        public override string ToString()
+        {
+            return $"{Type} {Name} {Level}";
         }
     }
 }

@@ -192,6 +192,17 @@ namespace ConquerServer.Client
                 case ItemSort.ShieldCoat:
                     pos = ItemPosition.W2Accessory;
                     break;
+
+                case ItemSort.Expendable:
+                    {
+                        switch (subType)
+                        {
+                            case ItemType.Arrow: 
+                                pos = ItemPosition.Set1Weapon2; 
+                                break;
+                        }
+                        break;
+                    }
             }
             return pos;
         }

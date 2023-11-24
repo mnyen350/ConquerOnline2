@@ -22,6 +22,21 @@ namespace ConquerServer
             return Math.Max(Math.Abs(x-nx), Math.Abs(y-ny));
         }
 
+        public static bool IsInAngleRange(int lower, int angle, int upper)
+        {
+            // https://stackoverflow.com/questions/71881043/how-to-check-angle-in-range
+            lower %= 360;
+            angle %= 360;
+            upper %= 360;
+
+            // normalize on the same circle
+            while (lower < 0) lower += 360;
+            while (angle < lower) angle += 360;
+            while (upper < lower) upper += 360;
+
+            return (lower <= angle) && (angle <= upper);
+        }
+
         public static int BitFold32(int lower16, int higher16)
         {
             return (lower16) | (higher16 << 16);

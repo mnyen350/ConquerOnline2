@@ -4,16 +4,17 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using ConquerServer.Shared;
 
 namespace ConquerServer.Combat
 {
-    public partial class Battle
+    public class MagicDispatcher
+        : Dispatcher<MagicSort, MagicAttribute, Action<Battle>>
     {
-        [Magic(MagicSort.AttackStatus, MagicSort.Attack)]
-        private void MagicAttackStatus()
+        public MagicDispatcher()
+            : base(typeof(Battle))
         {
-            // Targets already contains the target being hit
-            return;
+
         }
     }
 }
