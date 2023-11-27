@@ -42,6 +42,8 @@ namespace ConquerServer
             }
         }
 
+        public bool PlayerExists(int? id = null) => _gameClients.ContainsKey((int)(id ?? Owner.Id));
+
         public bool TryGetPlayer(int id, out GameClient? client)
         {
             return _gameClients.TryGetValue(id, out client);

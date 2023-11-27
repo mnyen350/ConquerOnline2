@@ -60,6 +60,7 @@ namespace ConquerServer.Client
          */
         public void Move(int mapId, int nx, int ny)
         {
+            Owner.Emote = EmoteType.None;
             /* owner moves(?)
              * 
              * find new things the owner can see(?)

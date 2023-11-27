@@ -51,7 +51,7 @@ namespace ConquerServer.Client
                 if (!Owner.IsDead) return; // revaldiate our assumption
                 Owner.StatusFlag += StatusFlag.Ghost;
                 Owner.Lookface = Owner.Lookface.ToGhost();
-                Owner.SendSynchronize(true);
+                Owner.SendSynchronize();
                 //Console.WriteLine($"{entity.Name} {entity.Lookface.ToUInt32()}");
 
                 await Task.Delay(TimeSpan.FromSeconds(16.5));
@@ -75,7 +75,7 @@ namespace ConquerServer.Client
             Owner.Health = Owner.MaxHealth;
 
             //syncronize the stats with client
-            Owner.SendSynchronize(true);
+            Owner.SendSynchronize();
 
             base.Detach();
         }

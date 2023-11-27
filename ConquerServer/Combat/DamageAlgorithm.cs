@@ -1,5 +1,6 @@
 ﻿using ConquerServer.Client;
 using ConquerServer.Database.Models;
+using ConquerServer.Shared;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,6 +20,16 @@ namespace ConquerServer.Combat
             Source = source;
             Target = target;
             Spell = spell;
+        }
+
+        protected double AdjustValue(double value, int adjust)
+        {
+            if (adjust >= 30000)
+            {
+                adjust -= 30000;
+                return value * adjust / 100;
+            }
+            return value + adjust;
         }
 
         protected double GetTargetDodgePercent()
@@ -48,9 +59,37 @@ namespace ConquerServer.Combat
             return 1.00;
         }
 
-        protected double GetStigmaPercent()
+        protected double AdjustDefense(double damage)
         {
-            return 1.00;
+            //return value is the damage dealt to target
+
+            //flat defense == defnese+power 
+            //... damage - defnes 
+
+            //percent -30k/100 -> perceot 
+            //defenes*percent
+
+            double defense = AdjustValue(Target.PhysicalDefense, Target.Status.GetPower(StatusType.Defense));
+            defense = AdjustValue(defense, Source.Status.GetPower(StatusType.XPDefense));
+        
+            return damage - defense;
+        }
+
+        protected double AdjustAttackStatus(double damage)
+        {
+            // if power is > 30000, it's a percent
+            // the way we get the % is (power-30000)/100
+            // if its not (so under or eq to 30000)
+            // it's flat value
+
+            damage = AdjustValue(damage, Source.Status.GetPower(StatusType.Attack));
+            damage = AdjustValue(damage, Source.Status.GetPower(StatusType.Superman));
+
+            //superman - warrior 
+            if (Source.Status.IsAttached(StatusType.Superman) && true /* TO-DO: is player */)
+                damage /= 5; // only 2x against players
+
+            return damage;
         }
 
         protected bool IsCriticalHit()
@@ -111,14 +150,11 @@ namespace ConquerServer.Combat
             return false;
         }
 
-        protected double GetSpellDamagePercent()
+        protected double AdjustSpellDamage(double damage)
         {
-            if (Spell != null && Spell.Power > 30000)
-            {
-                double percent = Spell.Power - 30000;
-                return percent / 100;
-            }
-            return 1.00;
+            damage = AdjustValue(damage, Spell?.Power ?? 0);
+
+            return damage;
         }
 
         public abstract int Calculate();

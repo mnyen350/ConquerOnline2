@@ -67,6 +67,9 @@ namespace ConquerServer.Shared
         Slowed,
         Frozen,
         MagicPenetration,
-        InvokeShield
+        InvokeShield,
+
+        // ...
+        XpCircle
     }
 }

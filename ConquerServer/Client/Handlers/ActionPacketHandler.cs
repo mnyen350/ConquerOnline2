@@ -155,6 +155,10 @@ namespace ConquerServer.Client
                     RevivePointModel rpm = Database.GetRevivePoint();
                     this.Teleport(rpm.ReviveMapId, rpm.X, rpm.Y);
                 }
+                else if(ap.Action == ActionType.ChangeEmote)
+                {
+                    Emote = (EmoteType)ap.Action;
+                }
                 else
                 {
                     //Console.WriteLine(p.Dump("Unknown Action - " + mode));

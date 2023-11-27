@@ -26,7 +26,7 @@ namespace ConquerServer.Network
         Init_Proficiencies = 77, // LoginStep 4
         Init_Spells = 78, // LoginStep 5
         ChangeDirection = 79,
-        ChangeAction = 81,
+        ChangeEmote = 81,
         EnterPortal = 85,
         Teleport = 86,
         LevelUp = 92,

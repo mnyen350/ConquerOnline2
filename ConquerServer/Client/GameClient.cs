@@ -9,11 +9,15 @@ using ConquerServer.Network.Sockets;
 using ConquerServer.Network.Packets;
 using ConquerServer.Database;
 using ConquerServer.Database.Models;
+using System.Diagnostics;
 
 namespace ConquerServer.Client
 {
     public partial class GameClient : ILocation
     {
+        private const int MAX_STAMINA = 100;
+        private const int MAX_XP = 100;
+
         private static NetworkDispatcher<GameClient> g_Network;
         private static SlashCommandDispatcher g_Slash;
         static GameClient()
@@ -57,7 +61,7 @@ namespace ConquerServer.Client
             }
             set 
             {
-                _health = Math.Max(Math.Min(MaxHealth, value), 0);
+                _health = MathHelper.Clamp(value, 0, MaxHealth);
             } 
         }
         public int MaxHealth { get; set; }
@@ -69,11 +73,23 @@ namespace ConquerServer.Client
             } 
             set 
             {
-                _mana = Math.Max(Math.Min(MaxMana, value),0);
+                _mana = MathHelper.Clamp(value, 0, MaxMana);
             } 
         }
         public int MaxMana { get; set; }
-        public int Stamina { get; set; }
+        private int _stamina;
+        public int Stamina { 
+            get { return _stamina; } 
+            set { _stamina = MathHelper.Clamp(value, 0, MAX_STAMINA); } 
+        }
+        private int _xp;
+
+#warning killing monsters give xp too, need implement
+        public int Xp
+        {
+            get { return _xp; }
+            set { _xp = MathHelper.Clamp(value, 0, MAX_XP); }
+        }
         public int PKPoints { get; set; }
         public int Level { get; set; }
         public int Job { get; set; }
@@ -116,6 +132,9 @@ namespace ConquerServer.Client
         public bool CanRevive { get; set; }
         public DateTime NextMagic { get; set; }
 
+        public DateTimer ResourceTimer { get; private set; }
+        public EmoteType Emote { get; set; }
+
 #warning, need a hostility/name flashing/name red whatever PKPOINTS 
 
         public GameClient(ClientSocket socket)
@@ -138,6 +157,8 @@ namespace ConquerServer.Client
             //change later
             NextMagic = DateTime.MinValue;
 
+            ResourceTimer = new DateTimer();
+            Emote = EmoteType.None;
         }
 
         public async Task<bool> DispatchNetwork(Packet msg)
@@ -380,6 +401,79 @@ namespace ConquerServer.Client
                 Send(lmp);
             
             SendHeroInformation();
+
+            // we do not await this task, as we want it to run in the background
+#pragma warning disable 4014
+            StartProcess();
+#pragma warning restore 4014
+        }
+
+        private async Task StartProcess()
+        {
+            while (World.PlayerExists())
+            {
+              
+                await ProcessPassiveResources();
+
+                // detach expired statuses
+                this.Status.DetachExpired();
+
+                // rest
+                await Task.Delay(100);
+            }
+        }
+
+        private async Task ProcessPassiveResources()
+        {
+
+            if (!ResourceTimer.IsReady)
+                return;
+
+            //reset the delay
+            ResourceTimer.Set(TimeSpan.FromSeconds(1));
+
+
+            /* 10 stam / sec IF SITTING
+             * 2 stam / sec NOT SITTING
+             * 
+             * no stam / sec if flying 
+             * 
+             * MAX stam ==100
+             * 
+             * 1 health / sec NOTDEAD 
+             * 1 mana / sec NOTDEAD
+             * 1XP / sec NOTDEAD
+             */
+
+            if (this.IsDead)
+                return;
+
+            int stamRegen = 2;
+            if (Status.IsAttached(StatusType.Fly))
+                stamRegen = 0;
+            else if (Emote == EmoteType.Sit)
+                stamRegen = 10;
+            
+            //add all regen values
+            Stamina += stamRegen;
+            Health += 1;
+            Mana += 1;
+
+            //TO-DO: change back to 1 or 5 for normal gameplay
+            // player should not passive regen Xp while having Xp flag
+            if (!Status.IsAttached(StatusType.XpCircle))
+            {
+                Xp += 20;
+            }
+
+            if(Xp == MAX_XP)
+            {
+                Xp = 0;
+                Status[StatusType.XpCircle].Attach(0, TimeSpan.FromSeconds(30));
+            }
+
+            SendSynchronize();
+           
         }
 
         public void Teleport(int x, int y) => Teleport(this.MapId, x, y);
@@ -418,12 +512,24 @@ namespace ConquerServer.Client
                 { SynchronizeType.Mana, Mana },
                 { SynchronizeType.MaxMana, MaxMana },
                 { SynchronizeType.Stamina, Stamina },
-                { SynchronizeType.Lookface, (long)Lookface }
+                { SynchronizeType.Lookface, (long)Lookface },
+                { SynchronizeType.XPCircle, Xp}
             };
         }
-
+        private bool IsBroadcastSynchronizeType(SynchronizeType type)
+        {
+            switch (type)
+            {
+                case SynchronizeType.Hair:
+                case SynchronizeType.MetempsychosisLevel:
+                case SynchronizeType.Metempsychosis:
+                case SynchronizeType.Lookface:
+                case SynchronizeType.Flags: return true;
+                default: return false;
+            }
+        }
         #region SEND methods
-        public void SendSynchronize(bool broadcast = false)
+        public void SendSynchronize()
         {
             var newSync = CreateSynchronize();
             var diff = new Dictionary<SynchronizeType, long>();
@@ -435,6 +541,8 @@ namespace ConquerServer.Client
                 if (!_sync.TryGetValue(kvp.Key, out oldValue) || oldValue != kvp.Value)
                     diff[kvp.Key] = kvp.Value;
             }
+
+            bool broadcast = diff.Keys.Any(type => IsBroadcastSynchronizeType(type));
 
             // make the packet and send it
             using (var p = new SynchronizePacket()

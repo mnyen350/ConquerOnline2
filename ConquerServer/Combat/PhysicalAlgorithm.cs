@@ -27,13 +27,13 @@ namespace ConquerServer.Combat
             double damage = Utility.Random.Next(Source.MinPhysicalAttack, Source.MaxPhysicalAttack);
 
             //Increase damage with spell percentage
-            damage *= GetSpellDamagePercent();
+            damage = AdjustSpellDamage(damage);
 
             //Increase damage with DragonGems percentage
             damage *= GetDragonGemPercent();
 
             //Increase damage with Stigma percentage
-            damage *= GetStigmaPercent();
+            damage = AdjustAttackStatus(damage);
 
             //Get Break Chance, if false reduce by 50 %
             //---
@@ -46,7 +46,7 @@ namespace ConquerServer.Combat
             //---
 
             //Subtract damage with defense
-            damage -= Target.PhysicalDefense;
+            damage = AdjustDefense(damage);
 
             //Decrease damage with Magic / Shield defense
             damage *= (1.00 - GetTargetShieldDefense());

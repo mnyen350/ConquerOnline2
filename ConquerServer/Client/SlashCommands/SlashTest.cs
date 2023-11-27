@@ -15,7 +15,7 @@ namespace ConquerServer.Client
         {
             this.Stamina = 100;
             this.Mana = this.MaxMana;
-            this.SendSynchronize(false);            
+            this.SendSynchronize();            
         }
     }
 }

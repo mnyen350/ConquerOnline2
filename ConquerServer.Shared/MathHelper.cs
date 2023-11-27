@@ -54,6 +54,11 @@ namespace ConquerServer
             upper32 = (int)(bits64 >> 32);
         }
 
+        public static int Clamp(int value, int min, int max)
+        {
+            return Math.Max(Math.Min(max, value), min);
+        }
+
         public static void GetWalkCoordinate(int x, int y, Direction dir, out int dx, out int dy)
         {
             //GETCHANGECOORDINATE?

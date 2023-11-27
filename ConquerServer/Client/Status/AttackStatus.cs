@@ -1,6 +1,5 @@
 ﻿using ConquerServer.Shared;
 using System;
-using System.Buffers;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,10 +7,10 @@ using System.Threading.Tasks;
 
 namespace ConquerServer.Client
 {
-    public class FlyStatus : FlagStatus
+    public class AttackStatus : FlagStatus
     {
-        public FlyStatus(GameClient owner)
-            :base(owner, StatusFlag.Fly)
+        public AttackStatus(GameClient owner)
+            :base(owner, StatusFlag.Attack)
         {
 
         }

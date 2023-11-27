@@ -295,10 +295,12 @@ namespace ConquerServer.Combat
                     else if(Spell?.Sort == MagicSort.AttachStatus)
                     {
                         target.Status.Attach(Spell.StatusType,Spell.Power, TimeSpan.FromSeconds(Spell.StepSecond));
+                        power.Add(target.Id, (Spell.StepSecond, false));
                     }
                     else if(Spell?.Sort == MagicSort.DetachStatus)
                     {
                         target.Status.Detach(Spell.StatusType);
+                        power.Add(target.Id, (0, false));
                     }
                 }
 
@@ -339,7 +341,7 @@ namespace ConquerServer.Combat
                     entity.Status.AttachDeath(Source);
                 }
 
-                entity.SendSynchronize(true);
+                entity.SendSynchronize();
             }
         }
     }

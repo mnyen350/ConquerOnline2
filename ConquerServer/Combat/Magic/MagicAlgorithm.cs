@@ -22,8 +22,8 @@ namespace ConquerServer.Combat
             double damage = Source.MagicAttack;
 
             // add on the spell power (it's flat)
-            if (Spell != null)
-                damage += Spell.Power;
+            damage = AdjustSpellDamage(Spell?.Power ?? 0);
+
 
             // increase based off of phoenix gems
             damage *= GetPhoenixGemPercent();

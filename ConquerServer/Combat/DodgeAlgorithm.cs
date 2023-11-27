@@ -28,7 +28,7 @@ namespace ConquerServer.Combat
             double damage = Utility.Random.Next(Source.MinPhysicalAttack, Source.MaxPhysicalAttack);
 
             //Increase damage with spell percentage
-            damage *= GetSpellDamagePercent();
+            damage = AdjustSpellDamage(damage);
 
             // if target is a player
             {

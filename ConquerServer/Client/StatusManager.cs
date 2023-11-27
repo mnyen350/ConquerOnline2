@@ -21,10 +21,15 @@ namespace ConquerServer.Client
         {
             Power = power;
             Expiration = duration != null ? DateTime.UtcNow.Add((TimeSpan)duration) : DateTime.MaxValue;
+            Owner.SendSynchronize();
         }
         public virtual void Detach()
         {
-            Expiration = null;
+            if (Expiration != null)
+            {
+                Expiration = null;
+                Owner.SendSynchronize();
+            }
         }
     }
 
@@ -39,6 +44,12 @@ namespace ConquerServer.Client
             _status = new Dictionary<StatusType, Status>();
             _status[StatusType.Death] = new DeathStatus(owner);
             _status[StatusType.Fly] = new FlyStatus(owner);
+            _status[StatusType.Defense] = new DefenseStatus(owner); //water tao shield and warrior Xp shield 
+            _status[StatusType.Attack] = new AttackStatus(owner);
+            _status[StatusType.XpCircle] = new XpCircleStatus(owner);
+            _status[StatusType.Superman] = new SupermanStatus(owner);
+            _status[StatusType.Cyclone] = new CycloneStatus(owner);
+            _status[StatusType.XPDefense] = new DefenseStatus(owner);
         }
 
         public Status this[StatusType type]
@@ -67,7 +78,7 @@ namespace ConquerServer.Client
                 _status[effect].Detach();
         }
 
-        public void Update()
+        public void DetachExpired()
         {
             foreach (StatusType type in _status.Keys)
             {
@@ -77,19 +88,19 @@ namespace ConquerServer.Client
             }
         }
 
-        public bool Has(StatusType type)
+        public bool IsAttached(StatusType type)
         {
             var status = _status[type];
             if (status.Expiration != null)
                 return true;
             return false;
         }
-        public int? GetPower(StatusType type)
+        public int GetPower(StatusType type, int defaultValue = 0)
         {
             var status = _status[type];
             if (status.Expiration != null)
                 return status.Power;
-            return null;
+            return defaultValue;
         }
     }
 }
