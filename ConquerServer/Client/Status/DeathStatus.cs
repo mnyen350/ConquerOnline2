@@ -38,7 +38,11 @@ namespace ConquerServer.Client
         public override void Attach(int power, TimeSpan? duration)
         {
             Owner.Health = 0;
+
             Owner.StatusFlag += StatusFlag.Death;
+            
+            // detach other status type's automatically
+            Owner.Status.Detach(StatusType.Fly, StatusType.Attack, StatusType.Defense);
 
             // issue the death broadcast, and change to ghost
             Utility.Delay(TimeSpan.FromSeconds(0.15), async () =>

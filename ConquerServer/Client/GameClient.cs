@@ -513,7 +513,8 @@ namespace ConquerServer.Client
                 { SynchronizeType.MaxMana, MaxMana },
                 { SynchronizeType.Stamina, Stamina },
                 { SynchronizeType.Lookface, (long)Lookface },
-                { SynchronizeType.XPCircle, Xp}
+                { SynchronizeType.XPCircle, Xp},
+                { SynchronizeType.Flags, StatusFlag.GetHashCode() }
             };
         }
         private bool IsBroadcastSynchronizeType(SynchronizeType type)
@@ -542,23 +543,29 @@ namespace ConquerServer.Client
                     diff[kvp.Key] = kvp.Value;
             }
 
-            bool broadcast = diff.Keys.Any(type => IsBroadcastSynchronizeType(type));
-
-            // make the packet and send it
-            using (var p = new SynchronizePacket()
-                                  .Begin(this.Id))
+            if (diff.Count > 0)
             {
-                // always sync the status flag
-                p.Synchronize(SynchronizeType.Flags, this.StatusFlag.Bits);
+                bool broadcast = diff.Keys.Any(type => IsBroadcastSynchronizeType(type));
 
-                // sync any differences
-                foreach (var kvp in diff)
-                    p.Synchronize(kvp.Key, kvp.Value);
+                // make the packet and send it
+                using (var p = new SynchronizePacket()
+                                      .Begin(this.Id))
+                {
+                    // sync any differences
+                    foreach (var kvp in diff)
+                    {
+                        // when flags, kvp value is the hash, so we sync the actual value
+                        if (kvp.Key == SynchronizeType.Flags)
+                            p.Synchronize(SynchronizeType.Flags, this.StatusFlag.Bits);
+                        else
+                            p.Synchronize(kvp.Key, kvp.Value);
+                    }
 
-                p.End();
+                    p.End();
 
-                if (broadcast) this.FieldOfView.Send(p, true);
-                else this.Send(p);
+                    if (broadcast) this.FieldOfView.Send(p, true);
+                    else this.Send(p);
+                }
             }
 
             // update old sync
@@ -708,8 +715,8 @@ namespace ConquerServer.Client
                 msg.WriteInt32(e.Equipment[ItemPosition.Set1Garment]?.TypeId ?? 0);
                 msg.WriteInt32(e.Equipment[ItemPosition.Set1Armor]?.TypeId ?? 0);
 
-                msg.WriteInt32(e.Equipment[ItemPosition.Set1Weapon1]?.TypeId ?? 0);// e.WeaponLeftTypeId);
                 msg.WriteInt32(e.Equipment[ItemPosition.Set1Weapon2]?.TypeId ?? 0); // e.WeaponRightTypeId);
+                msg.WriteInt32(e.Equipment[ItemPosition.Set1Weapon1]?.TypeId ?? 0);// e.WeaponLeftTypeId);
                 msg.WriteInt32(e.Equipment[ItemPosition.W1Accessory]?.TypeId ?? 0); // e.WeaponLeftCoatTypeId);
                 msg.WriteInt32(e.Equipment[ItemPosition.W2Accessory]?.TypeId ?? 0); // e.WeaponRightCoatTypeId);
 

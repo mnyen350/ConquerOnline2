@@ -19,12 +19,6 @@ namespace ConquerServer.Client
 
         public override void Attach(int power, TimeSpan? duration)
         {
-            //10x damage on monsters
-
-
-            //2x damage on players
-
-
             base.Attach(power, duration);
         }
     }

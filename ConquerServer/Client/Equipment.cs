@@ -184,7 +184,7 @@ namespace ConquerServer.Client
 
                 using (ItemUsePacket iup = new ItemUsePacket(ItemAction.Equip, item.Id, (int)position))
                     Owner.Send(iup);
-
+                
                 Update();
             }
         }
@@ -255,6 +255,10 @@ namespace ConquerServer.Client
 
             using (ItemUsePacket iup = new ItemUsePacket(ItemAction.Equipment, 0, 0, idArray))
                 Owner.Send(iup);
+
+            using (Packet update = GameClient.CreateEntityPacket(Owner))
+                Owner.FieldOfView.Send(update);
+
             Owner.RecalculateStats();
         }
     }

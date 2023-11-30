@@ -131,14 +131,7 @@ namespace ConquerServer.Shared
 
         public override int GetHashCode()
         {
-            int hash = 0;
-            int seed = unchecked((int)0xdeadbeef);
-            for (int i = 0; i < _vector.Masks.Length; i++)
-            {
-                hash = (_vector.Masks[i] ^ seed);
-                seed = (seed >> 5) * (i + 1);
-            }
-            return hash;
+            return (int)_vector.Masks.Aggregate(0xdeadbeef, (acc, v) => acc ^ (uint)v);
         }
     }
 }

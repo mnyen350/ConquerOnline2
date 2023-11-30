@@ -147,7 +147,6 @@ namespace ConquerServer.Client
                 else if (ap.Action == ActionType.Revive)
                 {
                     if (!CanRevive || !IsDead) return;
-
                     // detach death
                     this.Status[StatusType.Death].Detach();
 
