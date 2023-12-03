@@ -83,7 +83,7 @@ namespace ConquerServer.Database.Models
         public string Name { get; set; }
         public bool IsOffensive { get; set; }
         /// ///////////////
-        public int Ground { get; set; }
+        public bool IsGrounded { get; set; }
         public int Unknown1 { get; set; }
         public MagicTargetType Target { get; set; } //make type the enum?
         public int Level { get; set; }
@@ -102,7 +102,14 @@ namespace ConquerServer.Database.Models
         public int Unknown6 { get; set; }
         /// /// ///////////////
         public int Unknown7 { get; set; }
-        public int Unknown8 { get; set; }
+
+        //
+        // kind of a hacky solution, but xp skills never use stamina/mana
+        // not sure if we have the wrong field labeled, but it seems some non-xp skills actually have UseXP as true?
+        //
+        private bool _isUseXP;
+        public bool IsUseXP => _isUseXP && (UseStamina == 0) && (UseMana == 0) && (!IsWeaponHit);
+
         public ItemType WeaponSubType { get; set; }
         public int ActiveTimes { get; set; }
         public MagicPassiveType PassiveType { get; set; }
@@ -114,7 +121,7 @@ namespace ConquerServer.Database.Models
         public int Unknown14 { get; set; }
         public int UseStamina { get; set; }
         /// /// ///////////////
-        public int Unknown15 { get; set; }
+        public bool IsWeaponHit { get; set; }
         public int UseItem { get; set; }
         public int NextMagic { get; set; }
         public int NextMagicDelay { get; set; }
@@ -152,7 +159,7 @@ namespace ConquerServer.Database.Models
             model.Name = split[3];
             model.IsOffensive = (int.Parse(split[4]) != 0);
 
-            model.Ground = int.Parse(split[5]);
+            model.IsGrounded = (int.Parse(split[5]) != 0);
             model.Unknown1 = int.Parse(split[6]);
             model.Target = (MagicTargetType)int.Parse(split[7]);
             model.Level = int.Parse(split[8]);
@@ -171,7 +178,7 @@ namespace ConquerServer.Database.Models
             model.Unknown6 = int.Parse(split[19]);
 
             model.Unknown7 = int.Parse(split[20]);
-            model.Unknown8 = int.Parse(split[21]);
+            model._isUseXP = (int.Parse(split[21]) != 0);
             model.WeaponSubType = (ItemType)int.Parse(split[22]);
             model.ActiveTimes = int.Parse(split[23]);
             model.PassiveType = (MagicPassiveType)int.Parse(split[24]);
@@ -182,7 +189,7 @@ namespace ConquerServer.Database.Models
             model.Unknown14 = int.Parse(split[28]);
             model.UseStamina = int.Parse(split[29]);
 
-            model.Unknown15 = int.Parse(split[30]);
+            model.IsWeaponHit = (int.Parse(split[30]) !=0);
             model.UseItem = int.Parse(split[31]);
             model.NextMagic = int.Parse(split[32]);
             model.NextMagicDelay = int.Parse(split[33]);

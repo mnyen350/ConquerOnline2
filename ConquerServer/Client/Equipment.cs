@@ -1,5 +1,6 @@
 ﻿using ConquerServer.Network;
 using ConquerServer.Network.Packets;
+using ConquerServer.Shared;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -7,7 +8,6 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace ConquerServer.Client
 {

@@ -27,6 +27,7 @@ namespace ConquerServer.Client
         {
             if (Expiration != null)
             {
+                Power = 0;
                 Expiration = null;
                 Owner.SendSynchronize();
             }
@@ -50,6 +51,9 @@ namespace ConquerServer.Client
             _status[StatusType.Superman] = new SupermanStatus(owner);
             _status[StatusType.Cyclone] = new CycloneStatus(owner);
             _status[StatusType.XPDefense] = new DefenseStatus(owner);
+            _status[StatusType.YinYang] = new YinYangStatus(owner);
+            _status[StatusType.Hitrate] = new HitRateStatus(owner);
+            _status[StatusType.Intensify] = new IntensifyStatus(owner);
         }
 
         public Status this[StatusType type]

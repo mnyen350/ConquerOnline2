@@ -33,7 +33,7 @@ namespace ConquerServer.Shared
             WeaponDamage = new StatusFlag(19),
             MagicDamage = new StatusFlag(20),
             AttackSpeed = new StatusFlag(21),
-            Lurker = new StatusFlag(22),
+            YinYang = new StatusFlag(22),
             Cyclone = new StatusFlag(23),
             GuildCrime = new StatusFlag(24),
             ReflectMagic = new StatusFlag(25),

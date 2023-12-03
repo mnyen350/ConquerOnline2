@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ConquerServer.Network
+namespace ConquerServer.Shared
 {
     public enum ItemPosition
     {

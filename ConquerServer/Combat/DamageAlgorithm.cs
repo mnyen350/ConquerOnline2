@@ -89,6 +89,15 @@ namespace ConquerServer.Combat
             if (Source.Status.IsAttached(StatusType.Superman) && true /* TO-DO: is player */)
                 damage /= 5; // only 2x against players
 
+            //intenfy - archer
+            if (Source.Status.IsAttached(StatusType.Intensify))
+            {
+                if (Source.Equipment[ItemPosition.Set1Weapon1]?.SubType == ItemType.Bow)
+                {
+                    damage = AdjustValue(damage, Source.Status.GetPower(StatusType.Intensify));
+                }
+            }
+
             return damage;
         }
 
@@ -153,7 +162,6 @@ namespace ConquerServer.Combat
         protected double AdjustSpellDamage(double damage)
         {
             damage = AdjustValue(damage, Spell?.Power ?? 0);
-
             return damage;
         }
 

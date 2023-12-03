@@ -148,7 +148,7 @@ namespace ConquerServer.Client
                 {
                     if (!CanRevive || !IsDead) return;
                     // detach death
-                    this.Status[StatusType.Death].Detach();
+                    this.Status.Detach(StatusType.Death);
 
                     //teleport player to the revive coordinates
                     RevivePointModel rpm = Database.GetRevivePoint();
@@ -157,6 +157,10 @@ namespace ConquerServer.Client
                 else if(ap.Action == ActionType.ChangeEmote)
                 {
                     Emote = (EmoteType)ap.Action;
+                }
+                else if(ap.Action == ActionType.EndFly)
+                {
+                    this.Status.Detach(StatusType.Fly);
                 }
                 else
                 {

@@ -30,6 +30,16 @@ namespace ConquerServer.Combat
             //Increase damage with spell percentage
             damage = AdjustSpellDamage(damage);
 
+            //Increase damage with DragonGems percentage
+            damage *= GetDragonGemPercent();
+
+            //Increase damage with Stigma percentage
+            damage = AdjustAttackStatus(damage);
+
+            //Get CriticalChance and increase 1.5x
+            if (IsCriticalHit())
+                damage *= 1.5;
+
             // if target is a player
             {
                 // reduce damage by 88% -> (1-.12)

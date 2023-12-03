@@ -42,7 +42,7 @@ namespace ConquerServer.Client
             Owner.StatusFlag += StatusFlag.Death;
             
             // detach other status type's automatically
-            Owner.Status.Detach(StatusType.Fly, StatusType.Attack, StatusType.Defense);
+            Owner.Status.Detach(StatusType.Fly, StatusType.Attack, StatusType.Defense, StatusType.Hitrate, StatusType.YinYang);
 
             // issue the death broadcast, and change to ghost
             Utility.Delay(TimeSpan.FromSeconds(0.15), async () =>

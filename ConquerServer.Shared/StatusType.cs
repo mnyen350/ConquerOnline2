@@ -32,7 +32,7 @@ namespace ConquerServer.Shared
         ReflectMagic,
         Dodge,
         Fly,       //22
-        KeepBow,
+        Intensify,
         Stop,
         LuckSpread,
         LuckAbsorb,

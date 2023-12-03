@@ -1,4 +1,5 @@
 ﻿using ConquerServer.Client;
+using ConquerServer.Shared;
 using ConquerServer.Network;
 using System;
 using System.Collections.Generic;

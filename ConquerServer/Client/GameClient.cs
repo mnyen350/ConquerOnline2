@@ -463,13 +463,13 @@ namespace ConquerServer.Client
             // player should not passive regen Xp while having Xp flag
             if (!Status.IsAttached(StatusType.XpCircle))
             {
-                Xp += 20;
+                Xp += 10;
             }
 
             if(Xp == MAX_XP)
             {
                 Xp = 0;
-                Status[StatusType.XpCircle].Attach(0, TimeSpan.FromSeconds(30));
+                Status.Attach(StatusType.XpCircle, 0, TimeSpan.FromSeconds(20));
             }
 
             SendSynchronize();

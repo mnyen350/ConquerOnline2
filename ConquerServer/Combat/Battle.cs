@@ -76,11 +76,11 @@ namespace ConquerServer.Combat
                 return;
 
             // Check Pre-requisites
-            if (!ConsumePreRequisites())
+            int checkReq = ConsumePreRequisites();
+            if (checkReq!=0)
             {
-                Console.WriteLine("Failed pre-requisites");
+                Console.WriteLine("Failed pre-requisites due to {0}", checkReq);
                 return;
-
             }
             // Find targets
             if (CastX == 0 && CastY == 0 && Targets.Count > 0)
@@ -113,24 +113,33 @@ namespace ConquerServer.Combat
             SynchronizeAll();
         }
 
-        private bool ConsumePreRequisites()
+        private int ConsumePreRequisites()
         {
+            if (Spell == null)
+                return 1;
+
+
+            //
+            // if spell is xp, check for xp status
+            if (Spell.IsUseXP && !Source.Status.IsAttached(StatusType.XpCircle))
+                    return 2; //fail if not xp bar
+
             if (!Spell.IsWeaponPassive)
             {
                 // Set skill CD
                 if (Source.NextMagic > DateTime.UtcNow)
-                    return false;
+                    return 3;
             }
 
             // stamina
             //
             if (Source.Stamina < Spell.UseStamina)
-                return false;
+                return 4;
       
             // mana
             //
             if(Source.Mana < Spell.UseMana)
-                return false;
+                return 5;
 
             // arrows
             //
@@ -141,11 +150,15 @@ namespace ConquerServer.Combat
             // no CD for passive skills
             if (!Spell.IsWeaponPassive)
                 Source.NextMagic = DateTime.UtcNow.AddMilliseconds(Spell.DelayNextMagic);
+
+            if(Spell.IsUseXP)
+                Source.Status.Detach(StatusType.XpCircle);
             
             Source.Stamina -= Spell.UseStamina;
             Source.Mana -= Spell.UseMana;
 
-            return true;
+
+            return 0;
         }
 
 
@@ -182,54 +195,69 @@ namespace ConquerServer.Combat
             return false;
         }
 
-        private bool IsPotentialTarget(GameClient target)
+        private int IsPotentialTarget(GameClient target)
         {
+            // if flying no melee(no spell) AND  no IsGrounded spells
+            if (target.Status.IsAttached(StatusType.Fly))
+            {
+                if (Spell == null || Spell.IsGrounded)
+                    return 1;
+            }
+
             // detachstatus does not require target to be alive
             if (Spell == null || Spell.Sort != MagicSort.DetachStatus)
             {
-                if (target.Health <= 0) return false;
+                if (target.Health <= 0) return 2;
             }
 
             if (IsOffensive)
             {
-                if (target.Id == Source.Id) return false; // cannot hit yourself
+                if (target.Id == Source.Id) return 3; // cannot hit yourself
 
                 if (Source.PKMode == PKMode.Peace)
                 {
-                    return false; //hitting no one
+                    return 4; //hitting no one
                 }
                 else if (Source.PKMode == PKMode.Capture)
                 {
                     //TO-DO: implement nameflashing(datetime??), black name(PK POINT SYSTEM)
-                    return false;
+                    return 5;
                 }
                 else if (Source.PKMode == PKMode.Revenge)
                 {
                     //TO-DO: implement revenge list, auto add ppl who just killed you.. only hit those ppl
-                    return false;
+                    return 6;
                 }
                 else if (Source.PKMode == PKMode.Team)
                 {
                     //TO-DO: implrement Team like literally the team of 4 u are in RN
-                    return false;
+                    return 7;
                 }
                 else if (Source.PKMode == PKMode.Guild)
                 {
                     //TO-DO: everyone EXCEPT, guild, team, guild's allies
-                    return false;
+                    return 8;
                 }
                 /*else if(Source.PKMode == PKMode.Kill)
                 {
                     return true;
                 }*/
             }
-
-            return true; // is potential target
+            return 0; // is potential target
         }
 
         private void FilterTargets()
         {
-            Targets.RemoveWhere(t => !IsPotentialTarget(t));
+            Targets.RemoveWhere(t =>
+            {
+                int result = IsPotentialTarget(t);
+                if (result != 0)
+                {
+                    Console.WriteLine("target invalid due to {0}", result);
+                    return true;
+                }
+                return false;
+            });
         }
 
         private bool IsDodgeDamage()
@@ -302,6 +330,7 @@ namespace ConquerServer.Combat
                         target.Status.Detach(Spell.StatusType);
                         power.Add(target.Id, (0, false));
                     }
+                    
                 }
 
             }
