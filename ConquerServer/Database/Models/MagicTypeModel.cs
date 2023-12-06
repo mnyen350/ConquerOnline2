@@ -15,6 +15,7 @@ namespace ConquerServer.Database.Models
         Unknown30 = 30, // wtf?
     }
 
+    [Flags]
     public enum MagicTargetType
     {
         Ghost = 64,
@@ -85,7 +86,7 @@ namespace ConquerServer.Database.Models
         /// ///////////////
         public bool IsGrounded { get; set; }
         public int Unknown1 { get; set; }
-        public MagicTargetType Target { get; set; } //make type the enum?
+        public MagicTargetType Target { get; set; }
         public int Level { get; set; }
         public int UseMana { get; set; }
         /// /// ///////////////

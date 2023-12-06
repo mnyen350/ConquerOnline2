@@ -6,13 +6,18 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using ConquerServer.Database.Models;
+using ConquerServer.Client;
 
 namespace ConquerServer.Combat
 {
-    public partial class Battle
+    public class BombBattle : MagicBattle
     {
-        [Magic(MagicSort.Bomb, MagicSort.BombGroundTarget)]
-        private void MagicBomb()
+        public BombBattle(GameClient source, GameClient? target, int castX, int castY, MagicTypeModel spell)
+            : base(source, target, castX, castY, spell)
+        {
+
+        }
+        protected override void FindTargets()
         {
             // find all targets in range
             // TO-DO: circle

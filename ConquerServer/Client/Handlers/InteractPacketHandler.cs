@@ -25,10 +25,11 @@ namespace ConquerServer.Client
                     case InteractAction.Shoot:
                     case InteractAction.Attack:
                         {
-                            if (World.TryGetPlayer(ip.TargetId, out target))
+                            if (World.TryGetPlayer(ip.TargetId, out target) && target != null)
                             {
-                                Battle battle = new Battle(this, target);
-                                await battle.Start();
+                                Battle? battle = Battle.Create(this, target);
+                                if (battle != null)
+                                    await battle.Start();
                             }
                             break;
                         }
@@ -45,8 +46,10 @@ namespace ConquerServer.Client
                             int spellId = ip.Data[0] & ushort.MaxValue;
 
                             MagicTypeModel spell = this.Magics[spellId].Attributes;
-                            Battle battle = new Battle(this, target, ip.X, ip.Y, spell);
-                            await battle.Start();
+                            Battle? battle = Battle.Create(this, target, ip.X, ip.Y, spell);
+                            if (battle != null)
+                                await battle.Start();
+
                             break;
                         }
 

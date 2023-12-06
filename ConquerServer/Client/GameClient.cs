@@ -10,6 +10,7 @@ using ConquerServer.Network.Packets;
 using ConquerServer.Database;
 using ConquerServer.Database.Models;
 using System.Diagnostics;
+using System.Collections.Concurrent;
 
 namespace ConquerServer.Client
 {
@@ -29,6 +30,7 @@ namespace ConquerServer.Client
 
         private Dictionary<SynchronizeType, long> _sync;
         private bool _loginSequenceCompleted;
+        private ConcurrentQueue<byte[]> _outgoingPackets;
 
         public ClientSocket Socket { get; private set; }
         public Db Database { get; private set; }
@@ -140,6 +142,8 @@ namespace ConquerServer.Client
         public GameClient(ClientSocket socket)
         {
             Socket = socket;
+            _outgoingPackets = new ConcurrentQueue<byte[]>();
+
             Database = new Db(this);
             Server = string.Empty;
             Username = string.Empty;
@@ -192,7 +196,10 @@ namespace ConquerServer.Client
         public void Send(Packet msg)
         {
             //Console.WriteLine(msg.Dump("Sending"));
-            Socket.Send(msg);
+            //Socket.Send(msg);
+            byte[] p = new byte[msg.Size];
+            msg.CopyTo(p);
+            _outgoingPackets.Enqueue(p);
         }
 
         public void SendSystemMessage(string message)
@@ -410,16 +417,30 @@ namespace ConquerServer.Client
 
         private async Task StartProcess()
         {
+            var _100ms = new DateTimer();
             while (World.PlayerExists())
             {
-              
-                await ProcessPassiveResources();
+                //
+                // handle all packet sending in a single task
+                // to prevent race conditions on encryption
+                //
+                byte[] p;
+                while (_outgoingPackets.Count > 0 && _outgoingPackets.TryDequeue(out p))
+                    Socket.Send(p); // send over the network
 
-                // detach expired statuses
-                this.Status.DetachExpired();
+                if (_100ms.IsReady)
+                {
+                    // handle giving resources
+                    await ProcessPassiveResources();
 
-                // rest
-                await Task.Delay(100);
+                    // detach expired statuses
+                    this.Status.DetachExpired();
+
+                    // rest
+                    _100ms.Set(TimeSpan.FromMilliseconds(100));
+                }
+
+                await Task.Delay(5);
             }
         }
 

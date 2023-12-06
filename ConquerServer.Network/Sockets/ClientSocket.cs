@@ -7,6 +7,7 @@ using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using ConquerServer.Network.Cryptography;
+using System.Security.Cryptography;
 
 namespace ConquerServer.Network.Sockets
 {
@@ -48,12 +49,19 @@ namespace ConquerServer.Network.Sockets
 
         public void Send(Packet p)
         {
+            byte[] msg = new byte[p.Size];
+            p.CopyTo(msg);
+            Send(msg);
+        }
+
+        public void Send(byte[] p)
+        {
             if (m_Socket == null)
                 throw new InvalidOperationException("Socket cannot be null");
 
-            byte[] enc = new byte[p.Size + Padding.Length];
-            p.CopyTo(enc);
-            Array.Copy(Padding, 0, enc, p.Size, Padding.Length);
+            byte[] enc = new byte[p.Length + Padding.Length];
+            p.CopyTo(enc, 0);
+            Array.Copy(Padding, 0, enc, p.Length, Padding.Length);
             Cipher.Encrypt(enc, 0, enc, 0, enc.Length);
 
             m_Socket.BeginSend(enc, 0, enc.Length, SocketFlags.None, (res) =>

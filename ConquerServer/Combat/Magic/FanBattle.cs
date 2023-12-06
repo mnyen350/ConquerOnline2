@@ -1,4 +1,5 @@
-﻿using ConquerServer.Database.Models;
+﻿using ConquerServer.Client;
+using ConquerServer.Database.Models;
 using ConquerServer.Shared;
 using System;
 using System.Collections.Generic;
@@ -8,12 +9,16 @@ using System.Threading.Tasks;
 
 namespace ConquerServer.Combat
 {
-    public partial class Battle
+    public class FanBattle : MagicBattle
     {
         private const int FAN_ANGLE = 45;
+        public FanBattle(GameClient source, GameClient? target, int castX, int castY, MagicTypeModel spell)
+            : base(source, target, castX, castY, spell)
+        {
 
-        [Magic(MagicSort.Fan)]
-        private void MagicFan()
+        }
+
+        protected override void FindTargets()
         {
             // calculate the angle the player shot at
             int angle = Source.GetAngle(CastX, CastY);
@@ -29,5 +34,7 @@ namespace ConquerServer.Combat
                 .Where(t => MathHelper.IsInAngleRange(lower, Source.GetAngle(t), upper))); // only targets in angle range
 
         }
+
+
     }
 }

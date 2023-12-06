@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 namespace ConquerServer.Combat
 {
     using Point = Tuple<int, int>;
-    public partial class Battle
+    public class LineBattle : MagicBattle
     {
         private enum LineAlgorithm
         {
@@ -24,8 +24,14 @@ namespace ConquerServer.Combat
 
         private const LineAlgorithm LINE_ALGO_TYPE = LineAlgorithm.DDA;
 
-        [Magic(MagicSort.Line)]
-        private void MagicLine()
+        public LineBattle(GameClient source, GameClient? target, int castX, int castY, MagicTypeModel spell)
+            : base(source, target, castX, castY, spell)
+        {
+
+        }
+
+      
+        protected override void FindTargets()
         {
             if (Spell == null) return;
 

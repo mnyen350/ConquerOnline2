@@ -44,11 +44,11 @@ namespace ConquerServer
             game.Start();
             Console.WriteLine("OK");
 
-            var stig = Db._magicTypes.Values.LastOrDefault(v => v.Type == 1000);
+            var stig = Db._magicTypes.Values.LastOrDefault(v => v.Type == 1100);
 
             var spells = Db._magicTypes.Values
               .DistinctBy(m => m.Type)
-                .GroupBy(m => m.IsWeaponHit)
+                .GroupBy(m => m.Sort)
                 .ToList();
 
             for (; ; )
