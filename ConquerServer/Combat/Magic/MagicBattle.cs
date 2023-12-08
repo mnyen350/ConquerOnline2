@@ -54,8 +54,15 @@ namespace ConquerServer.Combat
             if (Spell == null)
                 return;
 
-            // Delay skill cast
-            await Task.Delay(Spell.DelayCast);
+            if (Spell.DelayCast > 0)
+            {
+                // Delay skill cast
+                await Task.Delay(Spell.DelayCast);
+
+                //if the person had moved.... before the delaycast ends, cancel the skill 
+                if (Source.X != CastX || Source.Y != CastY)
+                    return;
+            }
 
             int checkReq = CheckPrerequisites();
             if (CheckPrerequisites() != 0)
