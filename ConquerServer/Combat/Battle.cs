@@ -73,7 +73,9 @@ namespace ConquerServer.Combat
                     case MagicSort.Recruit: return new RecruitBattle(source, target, castX, castY, spell);
                     
                     case MagicSort.DetachStatus: return new DetachStatusBattle(source, target, castX, castY, spell);
-                    
+
+                    case MagicSort.DecLife: return new DecLifeBattle(source, target, castX, castY, spell);
+
                     default:
                         {
                             source.SendSystemMessage($"Spell {spell.Type} requested failed, magic sort {spell.Sort} not handled");

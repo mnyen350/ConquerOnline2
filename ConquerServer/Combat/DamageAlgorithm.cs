@@ -22,7 +22,7 @@ namespace ConquerServer.Combat
             Spell = spell;
         }
 
-        protected double AdjustValue(double value, int adjust)
+        public static double AdjustValue(double value, int adjust)
         {
             if (adjust >= 30000)
             {

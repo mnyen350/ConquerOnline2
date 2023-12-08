@@ -74,7 +74,6 @@ namespace ConquerServer.Combat
             FindTargets();
 
             // filter these targets
-            //Console.WriteLine("Filter targets: {0}", Targets.Count);
             FilterTargets();
 
             // "If targets.Count > 0 or if the spell is a skill like fire circle, fb, ss, etc... then..."
