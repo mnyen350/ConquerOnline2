@@ -13,7 +13,7 @@ namespace ConquerServer.Combat
     {
         private const double PLAYER_DAMAGE_REDUCTION = 0.88; //percent
         private const double PLAYER_REBORN_REDUCTION = 0.30; //percent
-        public DodgeAlgorithm(GameClient source, GameClient target, MagicTypeModel? spell)
+        public DodgeAlgorithm(Entity source, Entity target, MagicTypeModel? spell)
             : base(source, target, spell)
         {
 
@@ -41,12 +41,13 @@ namespace ConquerServer.Combat
                 damage *= 1.5;
 
             // if target is a player
+            if(TargetClient != null)
             {
                 // reduce damage by 88% -> (1-.12)
                 damage *= (1 - PLAYER_DAMAGE_REDUCTION);
 
                 // if target is reborn reduct by additional 30% -> 0.7
-                if (Target.Rebirth > 0)
+                if (((GameClient)Target).Rebirth > 0)
                 {
                     damage *= (1 - PLAYER_REBORN_REDUCTION);
                 }

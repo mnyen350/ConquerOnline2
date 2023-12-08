@@ -12,7 +12,7 @@ namespace ConquerServer.Combat
     public class FanBattle : MagicBattle
     {
         private const int FAN_ANGLE = 45;
-        public FanBattle(GameClient source, GameClient? target, int castX, int castY, MagicTypeModel spell)
+        public FanBattle(Entity source, Entity? target, int castX, int castY, MagicTypeModel spell)
             : base(source, target, castX, castY, spell)
         {
 

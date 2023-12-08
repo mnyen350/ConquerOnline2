@@ -12,7 +12,7 @@ namespace ConquerServer.Combat
 {
     public class BombBattle : MagicBattle
     {
-        public BombBattle(GameClient source, GameClient? target, int castX, int castY, MagicTypeModel spell)
+        public BombBattle(Entity source, Entity? target, int castX, int castY, MagicTypeModel spell)
             : base(source, target, castX, castY, spell)
         {
 

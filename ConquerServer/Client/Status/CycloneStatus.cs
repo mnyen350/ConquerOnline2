@@ -11,7 +11,7 @@ namespace ConquerServer.Client
     {
         //add to this whenever monster is killed during skill
         public int Score { get; set; }
-        public CycloneStatus(GameClient owner)
+        public CycloneStatus(Entity owner)
             :base(owner, StatusFlag.Cyclone)
         {
 

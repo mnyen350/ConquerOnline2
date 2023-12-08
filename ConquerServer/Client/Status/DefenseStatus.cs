@@ -9,7 +9,7 @@ namespace ConquerServer.Client
 {
     public class DefenseStatus : FlagStatus
     {
-        public DefenseStatus(GameClient owner)
+        public DefenseStatus(Entity owner)
             :base(owner, StatusFlag.Defense)
         {
 

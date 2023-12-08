@@ -10,13 +10,13 @@ namespace ConquerServer.Combat
 {
     public class DecLifeBattle :MagicBattle
     {
-        public DecLifeBattle(GameClient source, GameClient? target, int castX, int castY, MagicTypeModel spell)
+        public DecLifeBattle(Entity source, Entity? target, int castX, int castY, MagicTypeModel spell)
             : base(source, target, castX, castY, spell)
         {
 
         }
 
-        protected override void ProcessTarget(GameClient target, Dictionary<int, (int, bool)> power)
+        protected override void ProcessTarget(Entity target, Dictionary<int, (int, bool)> power)
         {
             /*
              * take target current health

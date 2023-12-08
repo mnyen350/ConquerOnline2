@@ -11,7 +11,7 @@ namespace ConquerServer.Client
     {
         public int Score { get; set; }
 
-        public SupermanStatus(GameClient owner)
+        public SupermanStatus(Entity owner)
             :base(owner, StatusFlag.Superman)
         {
 

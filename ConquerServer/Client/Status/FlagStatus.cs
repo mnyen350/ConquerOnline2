@@ -11,7 +11,7 @@ namespace ConquerServer.Client
     {
         public StatusFlag Flag { get; private set; }
 
-        public FlagStatus(GameClient owner, StatusFlag flag)
+        public FlagStatus(Entity owner, StatusFlag flag)
             : base(owner)
         {
             Flag = flag;

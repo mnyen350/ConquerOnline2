@@ -11,14 +11,20 @@ namespace ConquerServer.Combat
 {
     public abstract class DamageAlgorithm
     {
-        public GameClient Source { get; private set; }
-        public GameClient Target { get; private set; }
+        public Entity Source { get; private set; }
+        public GameClient? SourceClient { get; private set; }
+        public Entity Target { get; private set; }
+        public GameClient? TargetClient { get; private set; }
         public MagicTypeModel? Spell { get; private set; }
 
-        public DamageAlgorithm(GameClient source, GameClient target, MagicTypeModel? spell)
+        public DamageAlgorithm(Entity source, Entity target, MagicTypeModel? spell)
         {
             Source = source;
+            if(source.IsPlayer)
+                SourceClient = (GameClient)source;
             Target = target;
+            if(target.IsPlayer)
+                TargetClient = (GameClient)target;
             Spell = spell;
         }
 
@@ -34,11 +40,14 @@ namespace ConquerServer.Combat
 
         protected double GetTargetDodgePercent()
         {
-            //total/sum the dodge of all items the target has equiped
+            if (TargetClient != null)
+            {
+                //total/sum the dodge of all items the target has equiped
 
-            //loop target gear, add all dodge values
-            return ((double)Target.Equipment.Dodge / 100); //.75
-
+                //loop target gear, add all dodge values
+                return ((double)TargetClient.Equipment.Dodge / 100); //.75
+            }
+            return 0;
         }
 
         protected double GetDragonGemPercent()
@@ -89,12 +98,15 @@ namespace ConquerServer.Combat
             if (Source.Status.IsAttached(StatusType.Superman) && true /* TO-DO: is player */)
                 damage /= 5; // only 2x against players
 
-            //intenfy - archer
-            if (Source.Status.IsAttached(StatusType.Intensify))
+            if (SourceClient != null)
             {
-                if (Source.Equipment[ItemPosition.Set1Weapon1]?.SubType == ItemType.Bow)
+                //intenfy - archer
+                if (Source.Status.IsAttached(StatusType.Intensify))
                 {
-                    damage = AdjustValue(damage, Source.Status.GetPower(StatusType.Intensify));
+                    if (SourceClient.Equipment[ItemPosition.Set1Weapon1]?.SubType == ItemType.Bow)
+                    {
+                        damage = AdjustValue(damage, Source.Status.GetPower(StatusType.Intensify));
+                    }
                 }
             }
 

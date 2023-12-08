@@ -15,7 +15,7 @@ namespace ConquerServer.Combat
     {
   
 
-        public PhysicalAlgorithm(GameClient source, GameClient target, MagicTypeModel? spell)
+        public PhysicalAlgorithm(Entity source, Entity target, MagicTypeModel? spell)
             : base(source, target, spell)
         {
         }   

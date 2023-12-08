@@ -10,7 +10,7 @@ namespace ConquerServer.Combat
 {
     public class MagicAlgorithm : DamageAlgorithm
     {
-        public MagicAlgorithm(GameClient source, GameClient target, MagicTypeModel? spell)
+        public MagicAlgorithm(Entity source, Entity target, MagicTypeModel? spell)
             : base(source, target, spell)
         {
 

@@ -33,23 +33,29 @@ namespace ConquerServer.Combat
         {
             //c_Magic = new MagicDispatcher();
         }
+
         //source, target, skill/magic/lackof
-        public GameClient Source { get; set; }
-        public HashSet<GameClient> Targets { get; set; }
+        public Entity Source { get; private set; }
+        public GameClient? SourceClient { get; private set; }
+
+        public HashSet<Entity> Targets { get; set; }
 
         protected virtual bool IsOffensive => true;
         protected virtual bool IsGrounded => true;
         protected virtual bool AllowDeadTarget => false;
 
-        public Battle(GameClient source, GameClient? target)
+        public Battle(Entity source, Entity? target)
         {
             Source = source;
-            Targets = new HashSet<GameClient>();
+            if (source.IsPlayer)
+                SourceClient = (GameClient)source;
+
+            Targets = new HashSet<Entity>();
             if (target != null)
                 Targets.Add(target);
         }
 
-        public static Battle? Create(GameClient source, GameClient? target, int castX = 0, int castY = 0, MagicTypeModel? spell = null)
+        public static Battle? Create(Entity source, Entity? target, int castX = 0, int castY = 0, MagicTypeModel? spell = null)
         {
             if (spell != null)
             {
@@ -78,7 +84,8 @@ namespace ConquerServer.Combat
 
                     default:
                         {
-                            source.SendSystemMessage($"Spell {spell.Type} requested failed, magic sort {spell.Sort} not handled");
+                            if (source.IsPlayer)
+                                ((GameClient)source).SendSystemMessage($"Spell {spell.Type} requested failed, magic sort {spell.Sort} not handled");
                             break;
                         }
                 }
@@ -112,16 +119,20 @@ namespace ConquerServer.Combat
 
         private IEnumerable<MagicTypeModel> GetPassiveMagic()
         {
-            // get what's in the hand
-            var w1 = Source.Equipment[ItemPosition.Set1Weapon1]?.SubType;
-            var w2 = Source.Equipment[ItemPosition.Set1Weapon2]?.SubType;
+            if (SourceClient != null)
+            {
+                // get what's in the hand
+                var w1 = SourceClient.Equipment[ItemPosition.Set1Weapon1]?.SubType;
+                var w2 = SourceClient.Equipment[ItemPosition.Set1Weapon2]?.SubType;
 
-            // then filter by WeaponSubType
+                // then filter by WeaponSubType
 
-            return Source.Magics.Values
-                .Select(m => m.Attributes)
-                .Where(m => m.IsWeaponPassive)
-                .Where(m => m.WeaponSubType == w1 || m.WeaponSubType == w2);
+                return SourceClient.Magics.Values
+                    .Select(m => m.Attributes)
+                    .Where(m => m.IsWeaponPassive)
+                    .Where(m => m.WeaponSubType == w1 || m.WeaponSubType == w2);
+            }
+            return new MagicTypeModel[0];
         }
 
         private async Task<bool> ActivatePassiveSkill()
@@ -179,7 +190,7 @@ namespace ConquerServer.Combat
             }*/
             return PotentialTargetError.OK;
         }
-        protected virtual PotentialTargetError IsPotentialTarget(GameClient target)
+        protected virtual PotentialTargetError IsPotentialTarget(Entity target)
         {
             //no punch punch ghosts
             if (target.IsDead && !AllowDeadTarget)
@@ -223,15 +234,17 @@ namespace ConquerServer.Combat
 
         protected virtual bool IsDodgeDamage()
         {
-            var w1 = Source.Equipment[ItemPosition.Set1Weapon1]?.SubType;
-            var w2 = Source.Equipment[ItemPosition.Set1Weapon2]?.SubType;
-            if (w1 == ItemType.Bow && w2 == ItemType.Arrow)
-                return true;
-
+            if (SourceClient != null)
+            {
+                var w1 = SourceClient.Equipment[ItemPosition.Set1Weapon1]?.SubType;
+                var w2 = SourceClient.Equipment[ItemPosition.Set1Weapon2]?.SubType;
+                if (w1 == ItemType.Bow && w2 == ItemType.Arrow)
+                    return true;
+            }
             return false;
         }
 
-        protected virtual DamageAlgorithm GetDamageAlgorithm(GameClient target)
+        protected virtual DamageAlgorithm GetDamageAlgorithm(Entity target)
         {
             //if (Spell != null && Spell.UseMana > 0)
             //{
@@ -247,14 +260,12 @@ namespace ConquerServer.Combat
             }
         }
 
-        protected virtual void ProcessTarget(GameClient target, Dictionary<int, (int, bool)> power)
+        protected virtual void ProcessTarget(Entity target, Dictionary<int, (int, bool)> power)
         {
-
             var algorithm = GetDamageAlgorithm(target);
             var hit = algorithm.Calculate();
             target.Health -= hit;
             power.Add(target.Id, (hit, false));
-
         }
 
         protected void ProcessTargets()

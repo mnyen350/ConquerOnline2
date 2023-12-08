@@ -10,13 +10,13 @@ namespace ConquerServer.Combat
 {
     public class RecruitBattle : MagicBattle
     {
-        public RecruitBattle(GameClient source, GameClient? target, int castX, int castY, MagicTypeModel spell)
+        public RecruitBattle(Entity source, Entity? target, int castX, int castY, MagicTypeModel spell)
             : base(source, target, castX, castY, spell)
         {
 
         }
 
-        protected override void ProcessTarget(GameClient target, Dictionary<int, (int, bool)> power)
+        protected override void ProcessTarget(Entity target, Dictionary<int, (int, bool)> power)
         {
             if (Spell == null)
                 return;

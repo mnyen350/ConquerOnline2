@@ -9,7 +9,7 @@ namespace ConquerServer.Client
 {
     public class IntensifyStatus : FlagStatus
     {
-        public IntensifyStatus(GameClient owner)
+        public IntensifyStatus(Entity owner)
             :base(owner, StatusFlag.Intensify)
         {
 

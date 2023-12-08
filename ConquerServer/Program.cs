@@ -44,7 +44,7 @@ namespace ConquerServer
             game.Start();
             Console.WriteLine("OK");
 
-            var stig = Db._magicTypes.Values.LastOrDefault(v => v.Type == 1100);
+            var stig = Db._magicTypes.Values.LastOrDefault(v => v.Type == 8001);
 
             var spells = Db._magicTypes.Values
               .DistinctBy(m => m.Type)

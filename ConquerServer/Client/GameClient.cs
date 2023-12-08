@@ -14,10 +14,9 @@ using System.Collections.Concurrent;
 
 namespace ConquerServer.Client
 {
-    public partial class GameClient : ILocation
+    public partial class GameClient : Entity
     {
-        private const int MAX_STAMINA = 100;
-        private const int MAX_XP = 100;
+        
 
         private static NetworkDispatcher<GameClient> g_Network;
         private static SlashCommandDispatcher g_Slash;
@@ -28,26 +27,22 @@ namespace ConquerServer.Client
         }
 
 
-        private Dictionary<SynchronizeType, long> _sync;
+        
         private bool _loginSequenceCompleted;
         private ConcurrentQueue<byte[]> _outgoingPackets;
 
+        public override bool IsPlayer => true;
         public ClientSocket Socket { get; private set; }
         public Db Database { get; private set; }
-        public World World { get; private set; }
-        public FieldOfView FieldOfView { get; private set; }
+        
+        
         public Inventory Inventory { get; private set; }
         public Equipment Equipment { get; private set; }
         public Dictionary<int, Magic> Magics { get; private set; }
         public Dictionary<int, Proficiency> Proficiencies { get; private set; }
         public string Username { get; private set; }
         public string Server { get; private set; }
-        public int Id { get; set; }
-        public StatusManager Status { get; set; }
-        public StatusFlag StatusFlag { get; set; }
-        public Lookface Lookface { get; set; }
         public short HairStyle { get; set; }
-        public int Gold { get; set; }
         public int ConquerPoints { get; set; }
         public long Experience { get; set; }
         public int Strength { get; set; }
@@ -55,45 +50,9 @@ namespace ConquerServer.Client
         public int Vitality { get; set; }
         public int Spirit { get; set; }
         public int AttributePoints { get; set; }
-        public bool IsDead {  get { return (Health <= 0); } }
-        private int _health;
-        public int Health { get 
-            { 
-                return _health; 
-            }
-            set 
-            {
-                _health = MathHelper.Clamp(value, 0, MaxHealth);
-            } 
-        }
-        public int MaxHealth { get; set; }
-        private int _mana;
-        public int Mana { 
-            get 
-            {
-                return _mana;
-            } 
-            set 
-            {
-                _mana = MathHelper.Clamp(value, 0, MaxMana);
-            } 
-        }
-        public int MaxMana { get; set; }
-        private int _stamina;
-        public int Stamina { 
-            get { return _stamina; } 
-            set { _stamina = MathHelper.Clamp(value, 0, MAX_STAMINA); } 
-        }
-        private int _xp;
-
-#warning killing monsters give xp too, need implement
-        public int Xp
-        {
-            get { return _xp; }
-            set { _xp = MathHelper.Clamp(value, 0, MAX_XP); }
-        }
+        
+        
         public int PKPoints { get; set; }
-        public int Level { get; set; }
         public int Job { get; set; }
         public int Rebirth { get; set; }
         public int QuizPoints { get; set; }
@@ -101,22 +60,7 @@ namespace ConquerServer.Client
         public int VipLevel { get; set; }
         public int SubProfessionList { get; set; }
         public int Nationality { get; set; }
-        public string Name { get; set; }
         public string SpouseName { get; set; }
-
-        //map/location information 
-        public int MapId { get; set; }
-        public int X { get; set; }
-        public int Y { get; set; }
-
-        //stats, all set in calcstats
-        public int MinPhysicalAttack { get; private set; }
-        public int MaxPhysicalAttack { get; private set; }
-        public int MagicAttack { get; private set; }
-        public int PhysicalDefense { get; private set; }
-        public int MagicDefense { get; private set; }
-        public int HitRate { get; private set; }
-        public int Dodge { get; private set; }
         public Profession Profession
         {
             get
@@ -130,14 +74,12 @@ namespace ConquerServer.Client
             }
 
         }
-        public PKMode PKMode { get; private set; }
+        
         public bool CanRevive { get; set; }
-        public DateTime NextMagic { get; set; }
 
         public DateTimer ResourceTimer { get; private set; }
-        public EmoteType Emote { get; set; }
+        
 
-#warning, need a hostility/name flashing/name red whatever PKPOINTS 
 
         public GameClient(ClientSocket socket)
         {
@@ -147,19 +89,16 @@ namespace ConquerServer.Client
             Database = new Db(this);
             Server = string.Empty;
             Username = string.Empty;
-            Name = string.Empty;
+            
             SpouseName = string.Empty;
-            World = new World(this);
-            FieldOfView = new FieldOfView(this);
+            
+            
             Inventory = new Inventory(this);
             Equipment = new Equipment(this);
             Magics = new Dictionary<int, Magic>();
             Proficiencies = new Dictionary<int, Proficiency>();
-            Status = new StatusManager(this);
-            StatusFlag = StatusFlag.None;
-            _sync = new Dictionary<SynchronizeType, long>();
-            //change later
-            NextMagic = DateTime.MinValue;
+            
+            
 
             ResourceTimer = new DateTimer();
             Emote = EmoteType.None;
@@ -191,23 +130,6 @@ namespace ConquerServer.Client
         public void Disconnect()
         {
             Socket.Disconnect();
-        }
-
-        public void Send(Packet msg)
-        {
-            //Console.WriteLine(msg.Dump("Sending"));
-            //Socket.Send(msg);
-            byte[] p = new byte[msg.Size];
-            msg.CopyTo(p);
-            _outgoingPackets.Enqueue(p);
-        }
-
-        public void SendSystemMessage(string message)
-        {
-            using (var systemMessage = new ChatPacket(ChatMode.System, Name, string.Empty, message))
-            {
-                this.Send(systemMessage);
-            }
         }
 
         public void RecalculateStats()
@@ -497,15 +419,7 @@ namespace ConquerServer.Client
            
         }
 
-        public void Teleport(int x, int y) => Teleport(this.MapId, x, y);
 
-        public void Teleport(int mapId, int x, int y)
-        {
-            using (ActionPacket action = new ActionPacket(Id, x, y, 0, ActionType.Teleport, mapId))
-                FieldOfView.Send(action, true);
-            FieldOfView.Clear();
-            FieldOfView.Move(mapId, x, y);
-        }
 
         public void LearnMagic(int typeId, int level=0, long experience = 0, bool sendInfo = true) 
         {
@@ -524,73 +438,27 @@ namespace ConquerServer.Client
                 prof.Send();
         }
 
-        private Dictionary<SynchronizeType, long> CreateSynchronize()
+        public override void Teleport(int mapId, int x, int y)
         {
-            return new Dictionary<SynchronizeType, long>
-            {
-                { SynchronizeType.Health, Health },
-                { SynchronizeType.MaxLife, MaxHealth },
-                { SynchronizeType.Mana, Mana },
-                { SynchronizeType.MaxMana, MaxMana },
-                { SynchronizeType.Stamina, Stamina },
-                { SynchronizeType.Lookface, (long)Lookface },
-                { SynchronizeType.XPCircle, Xp},
-                { SynchronizeType.Flags, StatusFlag.GetHashCode() }
-            };
-        }
-        private bool IsBroadcastSynchronizeType(SynchronizeType type)
-        {
-            switch (type)
-            {
-                case SynchronizeType.Hair:
-                case SynchronizeType.MetempsychosisLevel:
-                case SynchronizeType.Metempsychosis:
-                case SynchronizeType.Lookface:
-                case SynchronizeType.Flags: return true;
-                default: return false;
-            }
+            using (ActionPacket action = new ActionPacket(Id, x, y, 0, ActionType.Teleport, mapId))
+                FieldOfView.Send(action, true);
+            base.Teleport(mapId, x, y);
         }
         #region SEND methods
-        public void SendSynchronize()
+        public override void Send(Packet msg)
         {
-            var newSync = CreateSynchronize();
-            var diff = new Dictionary<SynchronizeType, long>();
-
-            // find the differences between _sync and newSync
-            foreach (var kvp in newSync)
+            //Console.WriteLine(msg.Dump("Sending"));
+            //Socket.Send(msg);
+            byte[] p = new byte[msg.Size];
+            msg.CopyTo(p);
+            _outgoingPackets.Enqueue(p);
+        }
+        public void SendSystemMessage(string message)
+        {
+            using (var systemMessage = new ChatPacket(ChatMode.System, Name, string.Empty, message))
             {
-                long oldValue;
-                if (!_sync.TryGetValue(kvp.Key, out oldValue) || oldValue != kvp.Value)
-                    diff[kvp.Key] = kvp.Value;
+                this.Send(systemMessage);
             }
-
-            if (diff.Count > 0)
-            {
-                bool broadcast = diff.Keys.Any(type => IsBroadcastSynchronizeType(type));
-
-                // make the packet and send it
-                using (var p = new SynchronizePacket()
-                                      .Begin(this.Id))
-                {
-                    // sync any differences
-                    foreach (var kvp in diff)
-                    {
-                        // when flags, kvp value is the hash, so we sync the actual value
-                        if (kvp.Key == SynchronizeType.Flags)
-                            p.Synchronize(SynchronizeType.Flags, this.StatusFlag.Bits);
-                        else
-                            p.Synchronize(kvp.Key, kvp.Value);
-                    }
-
-                    p.End();
-
-                    if (broadcast) this.FieldOfView.Send(p, true);
-                    else this.Send(p);
-                }
-            }
-
-            // update old sync
-            _sync = newSync;
         }
         public void SendChat(ChatMode mode, string words)
         {
@@ -710,165 +578,7 @@ namespace ConquerServer.Client
         }
         
         
-        public static Packet CreateEntityPacket(GameClient e)
-        {
-            var msg = new Packet(PacketBufferSize.SizeOf512);
-            msg.WriteUInt32(TimeStamp.GetTime()); // 5735
-            msg.WriteUInt32((uint)e.Lookface);
-            msg.WriteInt32(e.Id);
-            msg.WriteInt32(0); // e.GuildId
-            msg.WriteInt32(0); // e.GuildRank
-            msg.WriteInt16(0); // e.GuildTitle);
-            //foreach (var bits in e.Flags.Bits)
-            //{
-            //    msg.WriteInt32(bits);
-            //}
-            msg.WriteInt32(0);
-            msg.WriteInt32(0);
-            msg.WriteInt32(0);
-            msg.WriteInt32(0);
-            msg.WriteInt32(0);
-            msg.WriteInt16(0); // appearance type
 
-            if (e.Id >= 1000000) //
-            {
-                msg.WriteInt32(e.Equipment[ItemPosition.Set1Helmet]?.TypeId ?? 0);
-                msg.WriteInt32(e.Equipment[ItemPosition.Set1Garment]?.TypeId ?? 0);
-                msg.WriteInt32(e.Equipment[ItemPosition.Set1Armor]?.TypeId ?? 0);
-
-                msg.WriteInt32(e.Equipment[ItemPosition.Set1Weapon2]?.TypeId ?? 0); // e.WeaponRightTypeId);
-                msg.WriteInt32(e.Equipment[ItemPosition.Set1Weapon1]?.TypeId ?? 0);// e.WeaponLeftTypeId);
-                msg.WriteInt32(e.Equipment[ItemPosition.W1Accessory]?.TypeId ?? 0); // e.WeaponLeftCoatTypeId);
-                msg.WriteInt32(e.Equipment[ItemPosition.W2Accessory]?.TypeId ?? 0); // e.WeaponRightCoatTypeId);
-
-
-                msg.WriteInt32(e.Equipment[ItemPosition.Steed]?.TypeId ?? 0); //MountTypeId
-                msg.WriteInt32(e.Equipment[ItemPosition.SteedAccessory]?.TypeId ?? 0); //MountDecoratorTypeId
-            }
-            else //monsters
-            {
-                msg.WriteInt32(0);
-                msg.WriteInt32(0);
-                msg.WriteInt32(0);
-
-                msg.WriteInt32(0);
-                msg.WriteInt32(0);
-                msg.WriteInt32(0);
-                msg.WriteInt32(0);
-
-                msg.WriteInt32(0);
-                msg.WriteInt32(0);
-            }
-
-            msg.WriteInt16(0); // unknown
-            msg.WriteInt16(0); // unknown
-            msg.WriteInt16(0); // speed percent?
-            msg.WriteInt32(e.Health); // monster life
-            msg.WriteInt16(0); // selected medal
-            if (e.Id < 1000000)
-                msg.WriteInt16((short)e.Level); // monster level
-            else
-                msg.WriteInt16(0);
-            //msg.WriteUInt32(e.Position.Point); // pos x/y
-            msg.WriteInt16((short)e.X);
-            msg.WriteInt16((short)e.Y);
-            msg.WriteInt16((short)e.HairStyle); // hair
-            msg.WriteInt8((byte)0); // e.Direction); // direction
-            msg.WriteInt32((int)0); // e.Stance); // pose
-            msg.WriteInt16(0); // continue action
-            msg.Fill(1);
-            msg.WriteInt8((byte)e.Rebirth); // metempsychosis
-            if (e.Id >= 1000000)
-                msg.WriteInt16((short)e.Level); // monster level
-            else
-                msg.WriteInt16(0);
-            msg.WriteInt8((byte)0); // (view ? 1 : 0)); // lock dummy
-            msg.WriteInt8((byte)0); // (e.IsAway ? 1 : 0)); // away status
-            msg.WriteInt32(0); // tutor battle effect
-            msg.WriteInt32(0); // chi battle effect
-            msg.WriteInt32(0); // team amount
-            msg.WriteInt32(0); // team leader id
-            msg.WriteInt32(0); // flowers
-            msg.WriteInt32(0); // nobility
-
-            if (e.Id >= 1000000) //player
-            {
-                int h = e.Equipment[ItemPosition.Set1Helmet]?.Color ?? 0;
-                msg.WriteInt16((short)(e.Equipment[ItemPosition.Set1Armor]?.Color ?? 0)); // e.ArmorColor); // armor color
-                msg.WriteInt16((short)(e.Equipment[ItemPosition.Set1Weapon2]?.Color ?? 0)); // e.ShieldColor); // shield color
-                msg.WriteInt16((short)(h)); // e.HelmetColor); // helmet color
-            }
-            else //monsters
-            {
-                msg.WriteInt16((short)0); 
-                msg.WriteInt16((short)0); 
-                msg.WriteInt16((short)0); 
-            }
-
-            msg.WriteInt32(e.QuizPoints); // quiz points
-            msg.WriteInt16((short)0); // e.MountAdd); // mount add
-            msg.WriteInt32(0); // mount exp
-            msg.WriteInt32(0); // e.MountColor); // mount color
-            msg.WriteInt16((short)e.EnlightenPoints); // enlighten point
-            msg.WriteInt16(0); // merit point
-            msg.WriteInt16(0); // unknown
-            msg.WriteInt16((short)0); // e.EnlightenDayInfo); // coach day info
-            msg.WriteInt32(e.VipLevel); // vip level
-            msg.WriteInt32(0); // e.Event != null ? e.Event.Id : 0); // clan id
-            msg.WriteInt32((int)0); // (e.Event != null ? (e.Event.Id == e.Id) ? ClanRank.Leader : ClanRank.Member : 0)); // clan rank
-            msg.WriteInt32(0); // clan battle effect
-            msg.WriteInt16(0); // title
-            msg.WriteInt32(0); // e.SpeedPercent); // custom -- 0xb7; speed percent
-            msg.WriteInt8(0); // texas actor
-            msg.WriteInt32(0); // arsenal battle effect
-            msg.WriteInt8(0); // arena witness
-            msg.WriteInt8((byte)0); // e.RoleType); // unknown #custom -- interact type
-            msg.WriteInt8(0); // unknown
-            msg.WriteInt8((byte)0); // (e.IsBoss ? 1 : 0)); // boss
-            msg.WriteInt32(0); // e.HelmetSoulId); // helm art id
-            msg.WriteInt32(0); // e.ArmorSoulId); // armr art id
-            msg.WriteInt32(0); // e.WeaponLeftSoulId); // wep2 art id
-            msg.WriteInt32(0); // e.WeaponRightSoulId); // wep1 art id
-            msg.WriteInt8(0); // selected subprofession
-            msg.WriteInt64(e.SubProfessionList); // subprofession info
-            msg.WriteInt16((short)0); // e.FirstJob); // birth profession
-            msg.WriteInt16(0); // first rebirth profession
-            msg.WriteInt16((short)e.Job); // profession
-            msg.WriteInt16((short)0); // e.Nationality); // country code
-            msg.WriteInt32(0); // team id
-            msg.WriteInt32(0); // e.BattlePower); // battle effect
-            msg.WriteInt8(0); // gang hood level (jiang hu)
-            msg.WriteInt8(0); // gang hood tag (jiang hu)
-            msg.WriteInt8(0); // unknown (used)
-
-            //msg.WriteInt16(0); // server name (5929)
-            //msg.WriteInt8(0); // call pet type (5936)
-            //msg.WriteInt16(0); // attack range (5936)
-            //msg.WriteInt32(0); // owner id (5936)
-
-            string mate = "";
-            string clan = "";
-            //if (e.Event != null)
-            //{
-            //    clan = e.Event.Name;
-            //}
-
-            msg.WriteStrings(e.Name, mate, clan, string.Empty, string.Empty, string.Empty); // name, mate, clan
-
-            // extended info is always supported
-            //msg.WriteInt8((byte)e.SizeAdd);
-            ///msg.WriteInt8((byte)(e.IsBoss ? 1 : 0));
-            //msg.WriteInt16((short)e.ZoomPercent);
-            //msg.WriteInt32(e.MaxHealth);
-
-            msg.Build(PacketType.SpawnEntity);
-            // Log.Write("{0}", msg.Dump());
-            return msg;
-        }
-        public static Packet CreateDespawnPacket(GameClient e)
-        {
-            return new ActionPacket(e.Id, 0, 0, 0, ActionType.RemoveEntity, 0);
-        }
 
         #endregion
     }

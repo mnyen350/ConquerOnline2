@@ -14,7 +14,7 @@ namespace ConquerServer.Combat
         protected override bool IsGrounded => Spell.IsGrounded;
         
 
-        public MagicBattle(GameClient source, GameClient? target, int castX, int castY, MagicTypeModel spell)
+        public MagicBattle(Entity source, Entity? target, int castX, int castY, MagicTypeModel spell)
             : base(source, target)
         {
             Spell = spell;
@@ -33,7 +33,7 @@ namespace ConquerServer.Combat
 
        
 
-        protected override DamageAlgorithm GetDamageAlgorithm(GameClient target)
+        protected override DamageAlgorithm GetDamageAlgorithm(Entity target)
         {
             if (Spell != null && Spell.UseMana > 0)
             {

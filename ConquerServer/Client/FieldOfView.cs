@@ -5,22 +5,22 @@ using System.Collections.Concurrent;
 
 namespace ConquerServer.Client
 {
-    public class FieldOfView : IEnumerable<GameClient>
+    public class FieldOfView : IEnumerable<Entity>
     {
         //POV is 19 DISTANCE in all directions
         private const int MAX_FOV_DISTANCE = 32;
-        private ConcurrentDictionary<int, GameClient> _screen;
-        public GameClient Owner { get; private set; }
+        private ConcurrentDictionary<int, Entity> _screen;
+        public Entity Owner { get; private set; }
         
 
 
-        public FieldOfView(GameClient client) 
+        public FieldOfView(Entity client) 
         {   
             Owner = client;
-            _screen = new ConcurrentDictionary<int, GameClient>();
+            _screen = new ConcurrentDictionary<int, Entity>();
            
         }
-        public IEnumerator<GameClient> GetEnumerator() => _screen.Values.GetEnumerator();
+        public IEnumerator<Entity> GetEnumerator() => _screen.Values.GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => _screen.Values.GetEnumerator();
         public void Clear()
         {
@@ -36,7 +36,7 @@ namespace ConquerServer.Client
             foreach (var p2 in _screen.Values)
             {
                 p2.FieldOfView._screen.Remove(Owner.Id);
-                using (var remove = GameClient.CreateDespawnPacket(Owner))
+                using (var remove = Entity.CreateDespawnPacket(Owner))
                     p2.Send(remove);
             }
         }

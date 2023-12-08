@@ -13,13 +13,13 @@ namespace ConquerServer.Combat
     public class DetachStatusBattle : MagicBattle
     {
         protected override bool AllowDeadTarget => (Spell.Sort == MagicSort.DetachStatus && Spell.StatusType == StatusType.Death);
-        public DetachStatusBattle(GameClient source, GameClient? target, int castX, int castY, MagicTypeModel spell)
+        public DetachStatusBattle(Entity source, Entity? target, int castX, int castY, MagicTypeModel spell)
             : base(source, target, castX, castY, spell)
         {
 
         }
 
-        protected override void ProcessTarget(GameClient target, Dictionary<int, (int, bool)> power)
+        protected override void ProcessTarget(Entity target, Dictionary<int, (int, bool)> power)
         {
 
             target.Status.Detach(Spell.StatusType);

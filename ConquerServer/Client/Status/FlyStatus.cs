@@ -10,7 +10,7 @@ namespace ConquerServer.Client
 {
     public class FlyStatus : FlagStatus
     {
-        public FlyStatus(GameClient owner)
+        public FlyStatus(Entity owner)
             :base(owner, StatusFlag.Fly)
         {
 

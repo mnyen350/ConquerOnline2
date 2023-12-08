@@ -10,10 +10,10 @@ namespace ConquerServer.Client
 {
     public abstract class Status
     {
-        public GameClient Owner { get; private set; }
+        public Entity Owner { get; private set; }
         public int Power { get; private set; }
         public DateTime? Expiration { get; private set; }
-        public Status(GameClient owner)
+        public Status(Entity owner)
         {
             Owner = owner;
         }
@@ -37,9 +37,9 @@ namespace ConquerServer.Client
     public class StatusManager
     {
         private Dictionary<StatusType, Status> _status;
-        public GameClient Owner { get; private set; }
+        public Entity Owner { get; private set; }
 
-        public StatusManager(GameClient owner) 
+        public StatusManager(Entity owner) 
         {
             Owner = owner;
             _status = new Dictionary<StatusType, Status>();
@@ -64,7 +64,7 @@ namespace ConquerServer.Client
             }
         }
 
-        public void AttachDeath(GameClient? source)
+        public void AttachDeath(Entity? source)
         {
             var deathStatus = (DeathStatus)_status[StatusType.Death];
             deathStatus.Attach(source);

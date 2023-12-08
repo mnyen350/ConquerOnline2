@@ -20,16 +20,17 @@ namespace ConquerServer
 
         public GameClient[] Players {  get { return _gameClients.Values.ToArray(); } }
 
-        public GameClient Owner { get; private set; }
-        public World(GameClient owner)
+        public Entity Owner { get; private set; }
+        public World(Entity owner)
         {
             Owner = owner;
         }  
 
         public void AddPlayer(GameClient? client = null)
         {
-            client = client?? Owner;
-            _gameClients.TryAdd(client.Id, client);
+            client = client ?? (Owner.IsPlayer ? (GameClient)Owner : null);
+            if (client != null)
+                _gameClients.TryAdd(client.Id, client);
         }
 
         public void RemovePlayer(int? id = null)

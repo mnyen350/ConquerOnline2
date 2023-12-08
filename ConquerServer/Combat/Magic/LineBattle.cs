@@ -24,7 +24,7 @@ namespace ConquerServer.Combat
 
         private const LineAlgorithm LINE_ALGO_TYPE = LineAlgorithm.DDA;
 
-        public LineBattle(GameClient source, GameClient? target, int castX, int castY, MagicTypeModel spell)
+        public LineBattle(Entity source, Entity? target, int castX, int castY, MagicTypeModel spell)
             : base(source, target, castX, castY, spell)
         {
 

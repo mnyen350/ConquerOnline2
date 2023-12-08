@@ -11,15 +11,15 @@ namespace ConquerServer.Client
 {
     public class DeathStatus : Status
     {
-        public GameClient? Source { get; private set; }
+        public Entity? Source { get; private set; }
 
-        public DeathStatus(GameClient owner)
+        public DeathStatus(Entity owner)
             : base(owner)
         {
 
         }
 
-        public void Attach(GameClient? source)
+        public void Attach(Entity? source)
         {
             Source = source;
             this.Attach(0, null);
@@ -45,24 +45,28 @@ namespace ConquerServer.Client
             Owner.Status.Detach(StatusType.Fly, StatusType.Attack, StatusType.Defense, StatusType.Hitrate, StatusType.YinYang);
 
             // issue the death broadcast, and change to ghost
-            Utility.Delay(TimeSpan.FromSeconds(0.15), async () =>
+            if (Owner.IsPlayer)
             {
-                if (!Owner.IsDead) return; // revaldiate our assumption
-                BroadcastDeath();
+                var ownerPlayer = (GameClient)Owner;
+                Utility.Delay(TimeSpan.FromSeconds(0.15), async () =>
+                {
+                    if (!Owner.IsDead) return; // revaldiate our assumption
+                    BroadcastDeath();
 
-                await Task.Delay(TimeSpan.FromSeconds(1.5));
+                    await Task.Delay(TimeSpan.FromSeconds(1.5));
 
-                if (!Owner.IsDead) return; // revaldiate our assumption
-                Owner.StatusFlag += StatusFlag.Ghost;
-                Owner.Lookface = Owner.Lookface.ToGhost();
-                Owner.SendSynchronize();
-                //Console.WriteLine($"{entity.Name} {entity.Lookface.ToUInt32()}");
+                    if (!Owner.IsDead) return; // revaldiate our assumption
+                    Owner.StatusFlag += StatusFlag.Ghost;
+                    Owner.Lookface = Owner.Lookface.ToGhost();
+                    Owner.SendSynchronize();
+                    //Console.WriteLine($"{entity.Name} {entity.Lookface.ToUInt32()}");
 
-                await Task.Delay(TimeSpan.FromSeconds(16.5));
+                    await Task.Delay(TimeSpan.FromSeconds(16.5));
 
-                if (!Owner.IsDead) return;
-                Owner.CanRevive = true;
-            });
+                    if (!Owner.IsDead) return;
+                    ownerPlayer.CanRevive = true;
+                });
+            }
 
             base.Attach(power, duration);
         }

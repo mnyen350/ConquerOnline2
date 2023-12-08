@@ -9,7 +9,7 @@ namespace ConquerServer.Client
 {
     internal class HitRateStatus : FlagStatus
     {
-        public HitRateStatus(GameClient owner)
+        public HitRateStatus(Entity owner)
             : base(owner, StatusFlag.Hitrate)
         {
 

@@ -10,7 +10,7 @@ namespace ConquerServer.Client
 {
     public class XpCircleStatus : FlagStatus
     {
-        public XpCircleStatus(GameClient owner)
+        public XpCircleStatus(Entity owner)
             :base(owner, StatusFlag.XPFull )
         {
 

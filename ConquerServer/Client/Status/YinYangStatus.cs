@@ -10,7 +10,7 @@ namespace ConquerServer.Client
     public class YinYangStatus : FlagStatus
     {
 
-        public YinYangStatus(GameClient owner)
+        public YinYangStatus(Entity owner)
             : base(owner, StatusFlag.YinYang)
         {
 
