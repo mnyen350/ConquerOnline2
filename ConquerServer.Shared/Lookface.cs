@@ -41,7 +41,7 @@ namespace ConquerServer.Shared
             Model = model;
         }
 
-        public Lookface(uint lookface)
+        public Lookface(long lookface)
         {
             MaskModel = (int)(lookface / 10000000);
             Avatar = (int)((lookface / 10000) % 1000); //--103

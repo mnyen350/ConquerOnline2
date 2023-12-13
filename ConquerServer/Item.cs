@@ -1,4 +1,5 @@
-﻿using ConquerServer.Database;
+﻿using ConquerServer.Client;
+using ConquerServer.Database;
 using ConquerServer.Database.Models;
 using ConquerServer.Network;
 using ConquerServer.Shared;
@@ -8,7 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ConquerServer.Client
+namespace ConquerServer
 {
     public class Item
     {
@@ -197,8 +198,8 @@ namespace ConquerServer.Client
                     {
                         switch (subType)
                         {
-                            case ItemType.Arrow: 
-                                pos = ItemPosition.Set1Weapon2; 
+                            case ItemType.Arrow:
+                                pos = ItemPosition.Set1Weapon2;
                                 break;
                         }
                         break;

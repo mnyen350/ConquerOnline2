@@ -23,8 +23,8 @@ namespace ConquerServer
         public int Level { get; set; }
         public int Gold { get; set; }
         public DateTime NextMagic { get; set; }
-        public PKMode PKMode { get; set; }
-        public EmoteType Emote { get; set; }
+        public virtual PKMode PKMode { get => PKMode.Kill; set => throw new NotImplementedException(); }
+        public virtual EmoteType Emote { get => EmoteType.None; set => throw new NotImplementedException(); }
 
         public StatusManager Status { get; set; }
         public StatusFlag StatusFlag { get; set; }

@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using System.Text.RegularExpressions;
 
 string baseFolder = @"C:\Users\Vince\Desktop\ConquerOnline2\ConquerServer\bin\Debug\net6.0\database\raw\";
 
@@ -42,6 +43,123 @@ List<Dictionary<string, string>>? ConvertCq(string[] columnNames, string fileNam
     }
 
     return map;
+}
+
+void ConvertCqMonsterType()
+{
+    string[] monsterColumns = new string[]
+    {
+          "id",
+          "name",
+          "type",
+          "lookface",
+          "life",
+          "mana",
+          "attack_max",
+          "attack_min",
+          "defence",
+          "dexterity",
+          "dodge",
+          "helmet_type",
+          "armor_type",
+          "weaponr_type",
+          "weaponl_type",
+          "attack_range",
+          "view_range",
+          "escape_life",
+          "attack_speed",
+          "move_speed",
+          "level",
+          "attack_user",
+          "drop_money",
+          "drop_itemtype",
+          "size_add",
+          "action",
+          "run_speed",
+          "drop_armet",
+          "drop_necklace",
+          "drop_armor",
+          "drop_ring",
+          "drop_weapon",
+          "drop_shield",
+          "drop_shoes",
+          "drop_hp",
+          "drop_mp",
+          "magic_type",
+          "magic_def",
+          "magic_hitrate",
+          "ai_type",
+          "defence2",
+          "stc_type",
+          "anti_monster",
+          "extra_battlelev",
+          "extra_exp",
+          "extra_damage",
+          "species_type",
+          "attr_metal",
+          "attr_wood",
+          "attr_water",
+          "attr_fire",
+          "attr_earth",
+          "vs_callpet",
+          "transform_flag",
+          "transform_condition",
+          "transform_monster",
+          "attack_new",
+          "defence_new",
+          "stable_defence",
+          "critical_rate",
+          "magic_critical_rate",
+          "anti_critical_rate",
+          "final_dmg_add",
+          "final_dmg_add_mgc",
+          "final_dmg_reduce",
+          "final_dmg_reduce_mgc",
+          "item_drop_rule1",
+          "item_drop_rule2",
+          "item_drop_rule3",
+          "item_drop_rule4"
+    };
+
+    var monsters = ConvertCq(monsterColumns, "cq_monstertype.sql");
+
+    string folder = CreateDirectory(Path.Join(baseFolder, "cq_monstertype"));
+    int converted = 0;
+
+    foreach (var mon in monsters)
+    {
+        string name = Regex.Replace(mon["name"], "[^A-Za-z0-9 -]", "");
+        Save(mon, $"{name}-{mon["id"]}", folder);
+        converted++;
+    }
+
+    Console.WriteLine("Converted {0} monsters", converted);
+}
+
+void ConvertCqGenerator()
+{
+    string[] generatorColumns = new string[]
+    {
+        "id", "mapid", "bound_x", "bound_y",
+        "bound_cx", "bound_cy", "maxnpc",
+        "rest_secs", "max_per_gen", "npctype",
+        "timer_begin", "timer_end",
+        "born_x", "born_y",
+        "mask", "path", "return_mode", "cluster_type"
+    };
+
+    var generator = ConvertCq(generatorColumns, "cq_generator.sql");
+
+    string generatorFolder = CreateDirectory(Path.Join(baseFolder, "cq_generator"));
+    int converted = 0;
+
+    foreach (var gen in generator)
+    {
+        Save(gen, $"{gen["mapid"]}-{gen["id"]}", generatorFolder);
+        converted++;
+    }
+
+    Console.WriteLine("Converted {0} generator", converted);
 }
 
 void ConvertCqMagic()
@@ -128,4 +246,4 @@ string Save(Dictionary<string, string> map, string file, string baseFolder)
 }
 
 
-ConvertCqMagic();
+ConvertCqMonsterType();

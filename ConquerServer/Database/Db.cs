@@ -19,15 +19,20 @@ namespace ConquerServer.Database
 {
     public class Db
     {
+        private const int MIN_CHAR_ID = 1000000;
+        private const int MIN_MONSTER_ID = 500000;
 
         private static Dictionary<int, AuthClient> _authClients;
         private static int _characterCounter;
         private static int _itemCounter;
+        private static int _monsterCounter;
         private static string _serverHost;
         private static List<PortalModel> _portals;
         private static Dictionary<int, ItemTypeModel> _itemTypes;
         public static Dictionary<int, MagicTypeModel> _magicTypes;
         private static Dictionary<int, RevivePointModel> _revivePoints;
+        private static Dictionary<int, SpawnCircleModel> _spawnCircles;
+        private static Dictionary<int, MonsterTypeModel> _monsterTypes;
         private static DbCore _core;
 
         private static Thread _worker;
@@ -40,6 +45,8 @@ namespace ConquerServer.Database
         private static string GetItemTypeFilePath() => $"./database/Item/itemtype.txt";
         private static string GetMagicTypeFilePath() => $"./database/Misc/magictype.txt";
         private static string GetRevivePointsFilePath() => $"./database/Misc/RevivePoints.txt";
+        private static string GetSpawnCircleFolderPath() => $"./database/cq_generator";
+        private static string GetMonsterTypeModelFolderPath() => $"./database/cq_monstertype";
 
         static Db()
         {
@@ -49,6 +56,8 @@ namespace ConquerServer.Database
             _itemTypes = new Dictionary<int, ItemTypeModel>();
             _magicTypes = new Dictionary<int, MagicTypeModel>();
             _revivePoints = new Dictionary<int, RevivePointModel>();
+            _spawnCircles = new Dictionary<int, SpawnCircleModel>();
+            _monsterTypes = new Dictionary<int, MonsterTypeModel>();
             _workQueue = new Queue<Action>();
             _worker = new Thread(ThreadTaskProcess);
         }
@@ -141,6 +150,7 @@ namespace ConquerServer.Database
 
             // set internal variables
             _characterCounter = databaseConfig.CharacterCounter;
+            _monsterCounter = MIN_MONSTER_ID;
             _serverHost = databaseConfig.ServerHost;
             _itemCounter = databaseConfig.ItemCounter;
 
@@ -159,6 +169,12 @@ namespace ConquerServer.Database
 
             int failedRevivePoints = LoadRevivePoints();
             Console.WriteLine("\tLoaded {0} revivePoints, {1} invalid", _revivePoints.Count, failedRevivePoints);
+
+            int failedSpawnCircles = LoadSpawnCircles();
+            Console.WriteLine("\tLoaded {0} spawnCircles, {1} invalid", _spawnCircles.Count, failedSpawnCircles);
+
+            int failedMonsterTypeModel = LoadMonsterTypeModels();
+            Console.WriteLine("\tLoaded {0} monsterTypeModels, {1} invalid", _monsterTypes.Count, failedMonsterTypeModel);
 
         }
         private static void LoadPortals()
@@ -238,6 +254,56 @@ namespace ConquerServer.Database
             }
             return failCount;
         }
+        private static int LoadSpawnCircles()
+        {
+            
+            int failCount = 0;
+            int n = 0;
+            string[] files = Directory.GetFiles(GetSpawnCircleFolderPath());
+            foreach (var spawnCircleFile in files)
+            {
+                try
+                {
+                    string spawnCircleContents = File.ReadAllText(spawnCircleFile);
+                    SpawnCircleModel? spawnCircle = JsonSerializer.Deserialize<SpawnCircleModel>(spawnCircleContents);
+                    if (spawnCircle == null)
+                        throw new Exception($"{spawnCircleFile} failed to load");
+                    
+                    _spawnCircles.Add(spawnCircle.Id, spawnCircle);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(spawnCircleFile);
+                    Console.WriteLine(ex.ToString());
+                    failCount++;
+                }
+                n++;
+            }
+            return failCount;
+        }
+        private static int LoadMonsterTypeModels()
+        {
+            int failCount = 0;
+            foreach (var monsterTypeModelFile in Directory.GetFiles(GetMonsterTypeModelFolderPath()))
+            {
+                try
+                {
+                    string monsterTypeModelContents = File.ReadAllText(monsterTypeModelFile);
+                    MonsterTypeModel? monsterTypeModel = JsonSerializer.Deserialize<MonsterTypeModel>(monsterTypeModelContents);
+                    if (monsterTypeModel == null)
+                        throw new Exception($"{monsterTypeModelFile} failed to load");
+
+                    _monsterTypes.Add(monsterTypeModel.Id, monsterTypeModel);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(monsterTypeModelFile);
+                    Console.WriteLine(ex.ToString());
+                    failCount++;
+                }
+            }
+            return failCount;
+        }
         public static void SaveConfig()
         {
             DatabaseConfig databaseConfig = new DatabaseConfig()
@@ -310,6 +376,7 @@ namespace ConquerServer.Database
 
         public RevivePointModel GetRevivePoint() => GetRevivePoint(Owner.MapId);
 
+        #region CHARACTER RELATED METHODS
         public bool HasCharacter(string? username = null)
         {
             // Action: check if file exists
@@ -366,6 +433,16 @@ namespace ConquerServer.Database
                 File.WriteAllText(GetAccountFilePath(username), serialize);
             });
         }
+        #endregion
+
+        #region MONSTER RELATED METHODS
+        public static int GetNextMonsterId()
+        {
+            if (_monsterCounter >= MIN_CHAR_ID)
+                _monsterCounter = MIN_MONSTER_ID;
+            return _monsterCounter++;
+        }        
+        #endregion
 
         public Item CreateItem(int typeId)
         {

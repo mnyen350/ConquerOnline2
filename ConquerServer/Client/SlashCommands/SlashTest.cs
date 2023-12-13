@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using ConquerServer.Network.Packets;
 using ConquerServer.Shared;
+using ConquerServer.Enemy;
 
 namespace ConquerServer.Client
 {
@@ -14,13 +15,21 @@ namespace ConquerServer.Client
         [SlashCommand("test")]
         private void SlashTest(string[] messageContents) 
         {
-            var sf = new StatusFlag(int.Parse(messageContents[1]));
-            if (messageContents[2] == "add")
-                this.StatusFlag += sf;
-            else
-                this.StatusFlag -= sf;
+            //var monster = new Monster();
+            //monster.Lookface = new Lookface(200);
+            //monster.MapId = this.MapId;
+            //monster.X = this.X;
+            //monster.Y = this.Y;
+            //monster.Id = 500000;
 
-            this.SendSynchronize();
+            var spawnCircle = new MonsterSpawnManager();
+            spawnCircle.Generate();
+
+            // test?
+            foreach (var m in spawnCircle.Monsters)
+            {
+                this.Send(Entity.CreateEntityPacket(m));
+            }
         }
 
         [SlashCommand("resource")]

@@ -30,12 +30,15 @@ namespace ConquerServer.Client
         
         private bool _loginSequenceCompleted;
         private ConcurrentQueue<byte[]> _outgoingPackets;
+        private EmoteType _emoteType;
+        private PKMode _pkMode;
 
         public override bool IsPlayer => true;
+        public override PKMode PKMode { get => _pkMode; set => _pkMode = value; }
+        public override EmoteType Emote { get => _emoteType; set => _emoteType = value; }
+
         public ClientSocket Socket { get; private set; }
-        public Db Database { get; private set; }
-        
-        
+        public Db Database { get; private set; }     
         public Inventory Inventory { get; private set; }
         public Equipment Equipment { get; private set; }
         public Dictionary<int, Magic> Magics { get; private set; }
